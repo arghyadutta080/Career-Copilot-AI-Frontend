@@ -4,8 +4,8 @@ import { gql } from "graphql-request";
 // Full analysis fetch — only used when viewing a single analysis detail page.
 // Fetches all fields needed across all tabs.
 
-export const GET_ANALYSIS = gql`
-  query GetAnalysis($id: ID!) {
+export const GET_ANALYSIS_OVERVIEW = gql`
+  query GetAnalysisOverview($id: ID!) {
     getAnalysis(id: $id) {
       id
       userId
@@ -29,10 +29,37 @@ export const GET_ANALYSIS = gql`
           score
           strengths
           weaknesses
+        }
+        roadmap {
+          overview
+        }
+      }
+    }
+  }
+`;
+
+export const GET_ANALYSIS_ATS = gql`
+  query GetAnalysisATS($id: ID!) {
+    getAnalysis(id: $id) {
+      id
+      results {
+        ats {
+          score
+          strengths
+          weaknesses
           missingKeywords
           summary
         }
+      }
+    }
+  }
+`;
 
+export const GET_ANALYSIS_SKILL_GAP = gql`
+  query GetAnalysisSkillGap($id: ID!) {
+    getAnalysis(id: $id) {
+      id
+      results {
         skillGap {
           missingSkills
           recommendedSkills
@@ -42,7 +69,16 @@ export const GET_ANALYSIS = gql`
           }
           summary
         }
+      }
+    }
+  }
+`;
 
+export const GET_ANALYSIS_RESUME_OPTIMIZER = gql`
+  query GetAnalysisResumeOptimizer($id: ID!) {
+    getAnalysis(id: $id) {
+      id
+      results {
         optimizer {
           overallSummary
           atsImpact {
@@ -66,12 +102,30 @@ export const GET_ANALYSIS = gql`
           }
           optimizedContent
         }
+      }
+    }
+  }
+`;
 
+export const GET_ANALYSIS_COVER_LETTER = gql`
+  query GetAnalysisCoverLetter($id: ID!) {
+    getAnalysis(id: $id) {
+      id
+      results {
         coverLetter {
           subject
           content
         }
+      }
+    }
+  }
+`;
 
+export const GET_ANALYSIS_INTERVIEW_PREP = gql`
+  query GetAnalysisInterviewPrep($id: ID!) {
+    getAnalysis(id: $id) {
+      id
+      results {
         interview {
           hr {
             id
@@ -129,7 +183,16 @@ export const GET_ANALYSIS = gql`
             }
           }
         }
+      }
+    }
+  }
+`;
 
+export const GET_ANALYSIS_LEARNING_ROADMAP = gql`
+  query GetAnalysisLearningRoadmap($id: ID!) {
+    getAnalysis(id: $id) {
+      id
+      results {
         roadmap {
           overview
           milestones {

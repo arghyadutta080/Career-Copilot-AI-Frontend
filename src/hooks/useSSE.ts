@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { connectSSE } from "@/lib/sse";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
 import type { SSEProgressEvent } from "@/types";
@@ -10,6 +11,7 @@ import type { SSEProgressEvent } from "@/types";
  * Automatically connects when analysisId is provided and disconnects on cleanup.
  */
 export function useSSE(analysisId: string | undefined, enabled = true) {
+  const queryClient = useQueryClient();
   const cleanupRef = useRef<(() => void) | null>(null);
   const { addEvent, reset } = useAnalysisProgressStore();
 
@@ -33,8 +35,12 @@ export function useSSE(analysisId: string | undefined, enabled = true) {
       (event: SSEProgressEvent) => {
         addEvent(event);
 
-        // Auto-disconnect when pipeline is complete
+        // Invalidate the status query to fetch the latest tool statuses in the background
+        queryClient.invalidateQueries({ queryKey: ["analysis-status", analysisId] });
+
+        // Auto-disconnect and fetch full data when pipeline is complete
         if (event.progress >= 100) {
+          queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
           disconnect();
         }
       },
@@ -48,7 +54,7 @@ export function useSSE(analysisId: string | undefined, enabled = true) {
     return () => {
       disconnect();
     };
-  }, [analysisId, enabled, addEvent, reset, disconnect]);
+  }, [analysisId, enabled, addEvent, reset, disconnect, queryClient]);
 
   return { disconnect };
 }

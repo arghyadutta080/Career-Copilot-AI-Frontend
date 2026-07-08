@@ -1,13 +1,19 @@
 import { Card } from "@/components/ui/Card";
 import { Download, FileEdit, TrendingUp } from "lucide-react";
-import type { Analysis } from "@/types";
+import { useAnalysisOptimizer } from "@/hooks/useAnalysis";
+import { TabContentSkeleton } from "@/components/ui/Skeleton";
 
 interface ResumeOptimizerTabProps {
-  analysis: Analysis;
+  analysisId: string;
 }
 
-export function ResumeOptimizerTab({ analysis }: ResumeOptimizerTabProps) {
-  const optimizer = analysis.results?.optimizer;
+export function ResumeOptimizerTab({ analysisId }: ResumeOptimizerTabProps) {
+  const { data: analysis, isLoading } = useAnalysisOptimizer(analysisId);
+  const optimizer = analysis?.results?.optimizer;
+
+  if (isLoading) {
+    return <TabContentSkeleton />;
+  }
 
   if (!optimizer) {
     return (

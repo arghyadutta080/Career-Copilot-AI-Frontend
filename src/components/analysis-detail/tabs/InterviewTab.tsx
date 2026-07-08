@@ -4,16 +4,23 @@ import { useState } from "react";
 import { Tabs } from "@/components/ui/Tabs";
 import { Card } from "@/components/ui/Card";
 import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
-import type { Analysis, InterviewQuestion } from "@/types";
+import { useAnalysisInterview } from "@/hooks/useAnalysis";
+import { TabContentSkeleton } from "@/components/ui/Skeleton";
+import type { InterviewQuestion } from "@/types";
 
 interface InterviewTabProps {
-  analysis: Analysis;
+  analysisId: string;
 }
 
-export function InterviewTab({ analysis }: InterviewTabProps) {
-  const interview = analysis.results?.interview;
+export function InterviewTab({ analysisId }: InterviewTabProps) {
+  const { data: analysis, isLoading } = useAnalysisInterview(analysisId);
+  const interview = analysis?.results?.interview;
   const [activeCategory, setActiveCategory] = useState("hr");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  if (isLoading) {
+    return <TabContentSkeleton />;
+  }
 
   if (!interview) {
     return (

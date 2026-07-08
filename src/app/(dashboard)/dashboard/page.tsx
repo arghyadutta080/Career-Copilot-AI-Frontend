@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { apiFetch } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { getGraphQLClient } from "@/lib/graphql";
-import { GET_ANALYSIS } from "@/lib/queries/analysis";
+import { GET_ANALYSIS_OVERVIEW } from "@/lib/queries/analysis";
 import type { Analysis, AnalysisListMeta, JobDescription } from "@/types";
 
 /** Aggregated analysis data for dashboard stats & list */
@@ -51,7 +51,7 @@ async function fetchDashboardData(): Promise<DashboardAnalysis[]> {
   const detailPromises = flatAnalyses.map(async (meta) => {
     try {
       const data = await client.request<{ getAnalysis: Analysis }>(
-        GET_ANALYSIS,
+        GET_ANALYSIS_OVERVIEW,
         { id: meta._id }
       );
       const analysis = data.getAnalysis;

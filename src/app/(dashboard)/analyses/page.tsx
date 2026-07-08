@@ -6,7 +6,7 @@ import { Plus, Search, SlidersHorizontal } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { getGraphQLClient } from "@/lib/graphql";
-import { GET_ANALYSIS } from "@/lib/queries/analysis";
+import { GET_ANALYSIS_OVERVIEW } from "@/lib/queries/analysis";
 import { RecentAnalysisCard } from "@/components/dashboard/RecentAnalysisCard";
 import { ListItemSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -37,7 +37,7 @@ async function fetchAllAnalyses(): Promise<AnalysisListItem[]> {
           try {
             const { getAnalysis: a } = await client.request<{
               getAnalysis: Analysis;
-            }>(GET_ANALYSIS, { id: m._id });
+            }>(GET_ANALYSIS_OVERVIEW, { id: m._id });
 
             return {
               analysisId: a.id,

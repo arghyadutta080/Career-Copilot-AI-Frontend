@@ -1,13 +1,19 @@
 import { Card } from "@/components/ui/Card";
 import { Zap, BookOpen, AlertCircle } from "lucide-react";
-import type { Analysis } from "@/types";
+import { useAnalysisSkillGap } from "@/hooks/useAnalysis";
+import { TabContentSkeleton } from "@/components/ui/Skeleton";
 
 interface SkillGapTabProps {
-  analysis: Analysis;
+  analysisId: string;
 }
 
-export function SkillGapTab({ analysis }: SkillGapTabProps) {
-  const skillGap = analysis.results?.skillGap;
+export function SkillGapTab({ analysisId }: SkillGapTabProps) {
+  const { data: analysis, isLoading } = useAnalysisSkillGap(analysisId);
+  const skillGap = analysis?.results?.skillGap;
+
+  if (isLoading) {
+    return <TabContentSkeleton />;
+  }
 
   if (!skillGap) {
     return (

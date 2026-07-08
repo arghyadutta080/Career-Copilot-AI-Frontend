@@ -42,12 +42,12 @@ export function AnalysisTabs({ analysis }: AnalysisTabsProps) {
 
       <div className="min-h-[400px]">
         {activeTab === "overview" && <OverviewTab analysis={analysis} onNavigate={setActiveTab} />}
-        {activeTab === "ats" && <ATSAnalysisTab analysis={analysis} />}
-        {activeTab === "skills" && <SkillGapTab analysis={analysis} />}
-        {activeTab === "optimizer" && <ResumeOptimizerTab analysis={analysis} />}
-        {activeTab === "cover-letter" && <CoverLetterTab analysis={analysis} />}
-        {activeTab === "interview" && <InterviewTab analysis={analysis} />}
-        {activeTab === "roadmap" && <RoadmapTab analysis={analysis} />}
+        {activeTab === "ats" && <ATSAnalysisTab analysisId={analysis.id} />}
+        {activeTab === "skills" && <SkillGapTab analysisId={analysis.id} />}
+        {activeTab === "optimizer" && <ResumeOptimizerTab analysisId={analysis.id} />}
+        {activeTab === "cover-letter" && <CoverLetterTab analysisId={analysis.id} />}
+        {activeTab === "interview" && <InterviewTab analysisId={analysis.id} />}
+        {activeTab === "roadmap" && <RoadmapTab analysisId={analysis.id} />}
       </div>
     </div>
   );

@@ -1,8 +1,7 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, FileText, CheckCircle2, ArrowRight } from "lucide-react";
+import { UploadCloud, ArrowRight, FileText, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { useResumes } from "@/hooks/useResumes";
 import { apiFetch } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import type { Resume } from "@/types";
@@ -18,9 +17,9 @@ export function ResumeUploadStep({
   onSelectResume,
   onNext,
 }: ResumeUploadStepProps) {
-  const { data: resumes, isLoading, refetch } = useResumes();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -28,25 +27,25 @@ export function ResumeUploadStep({
 
     setUploading(true);
     setUploadError(null);
+    setUploadedFile(file);
 
     const formData = new FormData();
     formData.append("resume", file);
 
     try {
       // NOTE: Using a hypothetical upload endpoint, update if different
-      const newResume = await apiFetch<Resume>("/api/resumes/upload", {
+      const response = await apiFetch<{ success: boolean; resume: Resume }>("/api/resumes/upload", {
         method: "POST",
         body: formData,
       });
       
-      await refetch();
-      onSelectResume(newResume);
+      onSelectResume(response.resume);
     } catch (err: any) {
       setUploadError(err.message || "Failed to upload resume");
     } finally {
       setUploading(false);
     }
-  }, [onSelectResume, refetch]);
+  }, [onSelectResume]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -102,53 +101,21 @@ export function ResumeUploadStep({
         )}
       </div>
 
-      {/* Existing Resumes */}
-      {!isLoading && resumes && resumes.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-4">
-            <div className="h-px flex-1 bg-zinc-800" />
-            <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-              Or select existing
-            </span>
-            <div className="h-px flex-1 bg-zinc-800" />
+      {/* Uploaded File Details */}
+      {selectedResume && uploadedFile && (
+        <div className="flex items-center gap-4 p-4 rounded-xl border border-violet-500/50 bg-violet-500/10 shadow-[0_0_15px_rgba(139,92,246,0.1)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400">
+            <FileText className="h-5 w-5" />
           </div>
-
-          <div className="grid gap-3 max-h-60 overflow-y-auto pr-2 scrollbar-hide">
-            {resumes.map((resume) => {
-              const isSelected = selectedResume?._id === resume._id;
-              
-              return (
-                <div
-                  key={resume._id}
-                  onClick={() => onSelectResume(resume)}
-                  className={cn(
-                    "flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200",
-                    isSelected
-                      ? "border-violet-500 bg-violet-500/10 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
-                      : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/80"
-                  )}
-                >
-                  <div className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
-                    isSelected ? "bg-violet-500/20 text-violet-400" : "bg-zinc-800 text-zinc-400"
-                  )}>
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("text-sm font-medium truncate", isSelected ? "text-white" : "text-zinc-200")}>
-                      {resume.originalName}
-                    </p>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      Uploaded {new Date(resume.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {isSelected && (
-                    <CheckCircle2 className="h-5 w-5 text-violet-500 shrink-0" />
-                  )}
-                </div>
-              );
-            })}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">
+              {uploadedFile.name}
+            </p>
+            <p className="text-xs text-violet-300/70 mt-0.5">
+              {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
+            </p>
           </div>
+          <CheckCircle2 className="h-5 w-5 text-violet-500 shrink-0" />
         </div>
       )}
 

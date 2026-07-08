@@ -3,15 +3,21 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Copy, CheckCircle2 } from "lucide-react";
-import type { Analysis } from "@/types";
+import { useAnalysisCoverLetter } from "@/hooks/useAnalysis";
+import { TabContentSkeleton } from "@/components/ui/Skeleton";
 
 interface CoverLetterTabProps {
-  analysis: Analysis;
+  analysisId: string;
 }
 
-export function CoverLetterTab({ analysis }: CoverLetterTabProps) {
-  const coverLetter = analysis.results?.coverLetter;
+export function CoverLetterTab({ analysisId }: CoverLetterTabProps) {
+  const { data: analysis, isLoading } = useAnalysisCoverLetter(analysisId);
+  const coverLetter = analysis?.results?.coverLetter;
   const [copied, setCopied] = useState(false);
+
+  if (isLoading) {
+    return <TabContentSkeleton />;
+  }
 
   if (!coverLetter) {
     return (

@@ -1,14 +1,20 @@
 import { RadialScore } from "@/components/ui/RadialScore";
 import { Card } from "@/components/ui/Card";
 import { CheckCircle2, AlertCircle, FileText } from "lucide-react";
-import type { Analysis } from "@/types";
+import { useAnalysisATS } from "@/hooks/useAnalysis";
+import { TabContentSkeleton } from "@/components/ui/Skeleton";
 
 interface ATSAnalysisTabProps {
-  analysis: Analysis;
+  analysisId: string;
 }
 
-export function ATSAnalysisTab({ analysis }: ATSAnalysisTabProps) {
-  const ats = analysis.results?.ats;
+export function ATSAnalysisTab({ analysisId }: ATSAnalysisTabProps) {
+  const { data: analysis, isLoading } = useAnalysisATS(analysisId);
+  const ats = analysis?.results?.ats;
+
+  if (isLoading) {
+    return <TabContentSkeleton />;
+  }
 
   if (!ats) {
     return (

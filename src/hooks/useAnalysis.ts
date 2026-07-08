@@ -2,7 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { getGraphQLClient } from "@/lib/graphql";
 import {
-  GET_ANALYSIS,
+  GET_ANALYSIS_OVERVIEW,
+  GET_ANALYSIS_ATS,
+  GET_ANALYSIS_SKILL_GAP,
+  GET_ANALYSIS_RESUME_OPTIMIZER,
+  GET_ANALYSIS_COVER_LETTER,
+  GET_ANALYSIS_INTERVIEW_PREP,
+  GET_ANALYSIS_LEARNING_ROADMAP,
   GET_ANALYSIS_STATUS,
   CREATE_ANALYSIS,
   START_ANALYSIS,
@@ -32,20 +38,116 @@ export function useJobAnalyses(jobId: string | undefined) {
 
 // ─── GraphQL-based hooks (detail views — full data) ─────────────────────────
 
-/** Full analysis fetch for detail page — all fields loaded on demand */
+/** Base analysis fetch for detail page overview */
 export function useAnalysis(analysisId: string | undefined) {
   return useQuery<Analysis>({
     queryKey: ["analysis", analysisId],
     queryFn: async () => {
       const client = getGraphQLClient();
       const data = await client.request<{ getAnalysis: Analysis }>(
-        GET_ANALYSIS,
+        GET_ANALYSIS_OVERVIEW,
         { id: analysisId }
       );
       return data.getAnalysis;
     },
     enabled: !!analysisId,
-    staleTime: 30 * 1000,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useAnalysisATS(analysisId: string | undefined) {
+  return useQuery<Analysis>({
+    queryKey: ["analysis", analysisId, "ats"],
+    queryFn: async () => {
+      const client = getGraphQLClient();
+      const data = await client.request<{ getAnalysis: Analysis }>(
+        GET_ANALYSIS_ATS,
+        { id: analysisId }
+      );
+      return data.getAnalysis;
+    },
+    enabled: !!analysisId,
+    staleTime: Infinity,
+  });
+}
+
+export function useAnalysisSkillGap(analysisId: string | undefined) {
+  return useQuery<Analysis>({
+    queryKey: ["analysis", analysisId, "skillgap"],
+    queryFn: async () => {
+      const client = getGraphQLClient();
+      const data = await client.request<{ getAnalysis: Analysis }>(
+        GET_ANALYSIS_SKILL_GAP,
+        { id: analysisId }
+      );
+      return data.getAnalysis;
+    },
+    enabled: !!analysisId,
+    staleTime: Infinity,
+  });
+}
+
+export function useAnalysisOptimizer(analysisId: string | undefined) {
+  return useQuery<Analysis>({
+    queryKey: ["analysis", analysisId, "optimizer"],
+    queryFn: async () => {
+      const client = getGraphQLClient();
+      const data = await client.request<{ getAnalysis: Analysis }>(
+        GET_ANALYSIS_RESUME_OPTIMIZER,
+        { id: analysisId }
+      );
+      return data.getAnalysis;
+    },
+    enabled: !!analysisId,
+    staleTime: Infinity,
+  });
+}
+
+export function useAnalysisCoverLetter(analysisId: string | undefined) {
+  return useQuery<Analysis>({
+    queryKey: ["analysis", analysisId, "cover-letter"],
+    queryFn: async () => {
+      const client = getGraphQLClient();
+      const data = await client.request<{ getAnalysis: Analysis }>(
+        GET_ANALYSIS_COVER_LETTER,
+        { id: analysisId }
+      );
+      return data.getAnalysis;
+    },
+    enabled: !!analysisId,
+    staleTime: Infinity,
+  });
+}
+
+export function useAnalysisInterview(analysisId: string | undefined) {
+  return useQuery<Analysis>({
+    queryKey: ["analysis", analysisId, "interview"],
+    queryFn: async () => {
+      const client = getGraphQLClient();
+      const data = await client.request<{ getAnalysis: Analysis }>(
+        GET_ANALYSIS_INTERVIEW_PREP,
+        { id: analysisId }
+      );
+      return data.getAnalysis;
+    },
+    enabled: !!analysisId,
+    staleTime: Infinity,
+  });
+}
+
+export function useAnalysisRoadmap(analysisId: string | undefined) {
+  return useQuery<Analysis>({
+    queryKey: ["analysis", analysisId, "roadmap"],
+    queryFn: async () => {
+      const client = getGraphQLClient();
+      const data = await client.request<{ getAnalysis: Analysis }>(
+        GET_ANALYSIS_LEARNING_ROADMAP,
+        { id: analysisId }
+      );
+      return data.getAnalysis;
+    },
+    enabled: !!analysisId,
+    staleTime: Infinity,
   });
 }
 
@@ -61,7 +163,7 @@ export function useAnalysisStatus(analysisId: string | undefined, enabled = true
       return data.getAnalysis;
     },
     enabled: !!analysisId && enabled,
-    refetchInterval: enabled ? 3000 : false, // Poll every 3s when active
+    refetchInterval: false, // Disabled polling; relying entirely on SSE invalidation
   });
 }
 

@@ -2,14 +2,21 @@
 
 import { Card } from "@/components/ui/Card";
 import { Map, Clock, ExternalLink, CheckCircle2 } from "lucide-react";
-import type { Analysis, RoadmapMilestone, RoadmapStep } from "@/types";
+import { useAnalysisRoadmap } from "@/hooks/useAnalysis";
+import { TabContentSkeleton } from "@/components/ui/Skeleton";
+import type { RoadmapMilestone, RoadmapStep } from "@/types";
 
 interface RoadmapTabProps {
-  analysis: Analysis;
+  analysisId: string;
 }
 
-export function RoadmapTab({ analysis }: RoadmapTabProps) {
-  const roadmap = analysis.results?.roadmap;
+export function RoadmapTab({ analysisId }: RoadmapTabProps) {
+  const { data: analysis, isLoading } = useAnalysisRoadmap(analysisId);
+  const roadmap = analysis?.results?.roadmap;
+
+  if (isLoading) {
+    return <TabContentSkeleton />;
+  }
 
   if (!roadmap) {
     return (
