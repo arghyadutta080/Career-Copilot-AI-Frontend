@@ -109,13 +109,13 @@ export function OverviewTab({ analysis, onNavigate }: OverviewTabProps) {
             </h3>
           </div>
           <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-sm text-zinc-300">
-            {results?.roadmap?.overview || "Loading learning roadmap overview..."}
+            {results?.roadmap?.overview || "No Roadmap generated yet"}
           </div>
           <button
             onClick={() => onNavigate("roadmap")}
             className="mt-4 w-full py-2.5 rounded-xl bg-zinc-800 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
           >
-            View Full Learning Roadmap
+             {results?.roadmap?.overview ? "View Full Learning Roadmap" : "Generate a learning roadmap and get your dream job"}
           </button>
         </Card>
       </div>

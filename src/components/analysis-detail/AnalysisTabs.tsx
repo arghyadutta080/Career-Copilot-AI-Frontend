@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Layout, Target, Zap, FileEdit, FileText, MessageSquare, Map } from "lucide-react";
+import { useSSE } from "@/hooks/useSSE";
+import { useAnalysisProgressStore } from "@/stores/analysisStore";
 import { Tabs } from "@/components/ui/Tabs";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { ATSAnalysisTab } from "./tabs/ATSAnalysisTab";
@@ -28,6 +30,10 @@ const tabItems = [
 
 export function AnalysisTabs({ analysis }: AnalysisTabsProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const { isGeneratingInterview, isGeneratingRoadmap } = useAnalysisProgressStore();
+
+  // Keep SSE connection alive across tab switches if generation is ongoing
+  useSSE(analysis.id, isGeneratingInterview || isGeneratingRoadmap);
 
   return (
     <div className="space-y-6">
@@ -46,8 +52,8 @@ export function AnalysisTabs({ analysis }: AnalysisTabsProps) {
         {activeTab === "skills" && <SkillGapTab analysisId={analysis.id} />}
         {activeTab === "optimizer" && <ResumeOptimizerTab analysisId={analysis.id} />}
         {activeTab === "cover-letter" && <CoverLetterTab analysisId={analysis.id} />}
-        {activeTab === "interview" && <InterviewTab analysisId={analysis.id} />}
-        {activeTab === "roadmap" && <RoadmapTab analysisId={analysis.id} />}
+        {activeTab === "interview" && <InterviewTab analysisId={analysis.id} status={analysis.toolStatus?.interview} />}
+        {activeTab === "roadmap" && <RoadmapTab analysisId={analysis.id} status={analysis.toolStatus?.roadmap} interviewStatus={analysis.toolStatus?.interview} />}
       </div>
     </div>
   );

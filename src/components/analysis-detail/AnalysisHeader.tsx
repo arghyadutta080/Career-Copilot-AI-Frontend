@@ -61,10 +61,10 @@ export const AnalysisHeader = memo(function AnalysisHeader({ analysis }: Analysi
           <ExternalLink className="h-4 w-4" />
           View Job
         </button>
-        <button className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
+        {/* <button className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
           <Download className="h-4 w-4" />
           Export PDF
-        </button>
+        </button> */}
       </div>
     </div>
   );

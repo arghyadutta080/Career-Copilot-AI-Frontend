@@ -211,6 +211,7 @@ export function useGenerateInterview() {
     },
     onSuccess: (_data, analysisId) => {
       queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
+      queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
     },
   });
 }
@@ -225,6 +226,7 @@ export function useGenerateRoadmap() {
     },
     onSuccess: (_data, analysisId) => {
       queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
+      queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "roadmap"] });
     },
   });
 }

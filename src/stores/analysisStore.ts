@@ -22,6 +22,15 @@ interface AnalysisProgressState {
 
   /** Reset for a new analysis run */
   reset: () => void;
+
+  /** Track manual generation for individual tabs */
+  isGeneratingInterview: boolean;
+  setIsGeneratingInterview: (isGenerating: boolean) => void;
+  generationStartTimeInterview: number | null;
+  
+  isGeneratingRoadmap: boolean;
+  setIsGeneratingRoadmap: (isGenerating: boolean) => void;
+  generationStartTimeRoadmap: number | null;
 }
 
 export const useAnalysisProgressStore = create<AnalysisProgressState>(
@@ -48,6 +57,22 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
         progress: 0,
         isComplete: false,
         hasError: false,
+      }),
+
+    isGeneratingInterview: false,
+    generationStartTimeInterview: null,
+    setIsGeneratingInterview: (isGenerating) => 
+      set({ 
+        isGeneratingInterview: isGenerating,
+        generationStartTimeInterview: isGenerating ? Date.now() : null
+      }),
+
+    isGeneratingRoadmap: false,
+    generationStartTimeRoadmap: null,
+    setIsGeneratingRoadmap: (isGenerating) => 
+      set({ 
+        isGeneratingRoadmap: isGenerating,
+        generationStartTimeRoadmap: isGenerating ? Date.now() : null
       }),
   })
 );

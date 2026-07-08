@@ -1,21 +1,87 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Map, Clock, ExternalLink, CheckCircle2 } from "lucide-react";
-import { useAnalysisRoadmap } from "@/hooks/useAnalysis";
+import { useAnalysisRoadmap, useGenerateRoadmap } from "@/hooks/useAnalysis";
+import { GeneratingUI } from "@/components/ui/GeneratingUI";
 import { TabContentSkeleton } from "@/components/ui/Skeleton";
+import { useAnalysisProgressStore } from "@/stores/analysisStore";
 import type { RoadmapMilestone, RoadmapStep } from "@/types";
+import { useEffect, useState } from "react";
 
 interface RoadmapTabProps {
   analysisId: string;
+  status?: string;
+  interviewStatus?: string;
 }
 
-export function RoadmapTab({ analysisId }: RoadmapTabProps) {
+export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabProps) {
   const { data: analysis, isLoading } = useAnalysisRoadmap(analysisId);
-  const roadmap = analysis?.results?.roadmap;
+  const { mutate: generateRoadmap, isPending } = useGenerateRoadmap();
+  const queryClient = useQueryClient();
+  const { events, isGeneratingRoadmap, setIsGeneratingRoadmap } = useAnalysisProgressStore();
 
-  if (isLoading) {
+  const roadmap = analysis?.results?.roadmap;
+  const isInterviewNotCompleted = interviewStatus !== "completed";
+
+  useEffect(() => {
+    if (isGeneratingRoadmap) {
+      const isComplete = events.some(
+        (e) => e.step === "Learning Roadmap" && e.progress === 100
+      );
+      if (isComplete) {
+        setIsGeneratingRoadmap(false);
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "roadmap"] });
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
+      }
+    }
+  }, [events, isGeneratingRoadmap, analysisId, queryClient, setIsGeneratingRoadmap]);
+
+  const handleGenerate = () => {
+    setIsGeneratingRoadmap(true);
+    generateRoadmap(analysisId);
+  };
+
+  // 1. If initially loading data from server, show skeleton
+  if (isLoading && !roadmap?.overview) {
     return <TabContentSkeleton />;
+  }
+
+  // 2. If generating or waiting for mutation, show generating UI
+  if (isGeneratingRoadmap || isPending) {
+    return <GeneratingUI type="roadmap" />;
+  }
+
+  // 3. If data is not present, show the generation button
+  if (!roadmap?.overview) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400 mb-2 border border-blue-500/20">
+          <Map className="h-7 w-7" />
+        </div>
+        <h3 className="text-2xl font-bold text-white">Learning Roadmap</h3>
+        <p className="text-zinc-400 max-w-md pb-4">
+          Generate a personalized learning path to bridge your skill gaps for this specific role.
+        </p>
+        <button
+          onClick={handleGenerate}
+          disabled={isInterviewNotCompleted}
+          className={`px-8 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/20 ${
+            isInterviewNotCompleted
+              ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-[1.02] active:scale-[0.98]"
+          }`}
+        >
+          Generate Roadmap
+        </button>
+        {isInterviewNotCompleted && (
+          <p className="text-sm text-amber-500/90 mt-4 bg-amber-500/10 px-4 py-2 rounded-lg border border-amber-500/20">
+            ⚠️ You must generate Interview Questions before you can generate a Learning Roadmap.
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (!roadmap) {

@@ -1,25 +1,78 @@
 "use client";
 
-import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Tabs } from "@/components/ui/Tabs";
 import { Card } from "@/components/ui/Card";
 import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
-import { useAnalysisInterview } from "@/hooks/useAnalysis";
+import { useAnalysisInterview, useGenerateInterview } from "@/hooks/useAnalysis";
+import { GeneratingUI } from "@/components/ui/GeneratingUI";
 import { TabContentSkeleton } from "@/components/ui/Skeleton";
+import { useAnalysisProgressStore } from "@/stores/analysisStore";
 import type { InterviewQuestion } from "@/types";
+import { useEffect, useState } from "react";
 
 interface InterviewTabProps {
   analysisId: string;
+  status?: string;
 }
 
-export function InterviewTab({ analysisId }: InterviewTabProps) {
+export function InterviewTab({ analysisId, status }: InterviewTabProps) {
   const { data: analysis, isLoading } = useAnalysisInterview(analysisId);
+  const { mutate: generateInterview, isPending } = useGenerateInterview();
+  const queryClient = useQueryClient();
+  const { events, isGeneratingInterview, setIsGeneratingInterview } = useAnalysisProgressStore();
+  
   const interview = analysis?.results?.interview;
   const [activeCategory, setActiveCategory] = useState("hr");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (isGeneratingInterview) {
+      const isComplete = events.some(
+        (e) => e.step === "Interview Questions" && e.progress === 100
+      );
+      if (isComplete) {
+        setIsGeneratingInterview(false);
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
+      }
+    }
+  }, [events, isGeneratingInterview, analysisId, queryClient, setIsGeneratingInterview]);
+
+  const handleGenerate = () => {
+    setIsGeneratingInterview(true);
+    generateInterview(analysisId);
+  };
+
+  // 1. If initially loading data from server, show skeleton
+  if (isLoading && !interview?.resumeBased?.length) {
     return <TabContentSkeleton />;
+  }
+
+  // 2. If generating or waiting for mutation, show generating UI
+  if (isGeneratingInterview || isPending) {
+    return <GeneratingUI type="interview" />;
+  }
+
+  // 3. If data is not present, show the generation button
+  if (!interview?.resumeBased?.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400 mb-2 border border-violet-500/20">
+          <MessageSquare className="h-7 w-7" />
+        </div>
+        <h3 className="text-2xl font-bold text-white">Interview Preparation</h3>
+        <p className="text-zinc-400 max-w-md pb-4">
+          Generate role-specific interview questions based on your resume and the job description.
+        </p>
+        <button
+          onClick={handleGenerate}
+          className="bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-violet-500/20"
+        >
+          Generate Questions
+        </button>
+      </div>
+    );
   }
 
   if (!interview) {

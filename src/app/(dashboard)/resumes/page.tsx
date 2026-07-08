@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Plus, Search, Trash2 } from "lucide-react";
+import { FileText, Plus, Search, Trash2, Eye, X, ExternalLink } from "lucide-react";
 import { useResumes } from "@/hooks/useResumes";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListItemSkeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/api";
+import { ParsedResumeView } from "@/components/resumes/ParsedResumeView";
 
 export default function ResumesPage() {
   const { data: resumes, isLoading, refetch } = useResumes();
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [previewResume, setPreviewResume] = useState<any | null>(null);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -68,11 +70,19 @@ export default function ResumesPage() {
         ) : filteredResumes && filteredResumes.length > 0 ? (
           filteredResumes.map((resume) => (
             <Card key={resume._id} className="flex flex-col justify-between h-40 group relative overflow-hidden">
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                <button
+                  onClick={() => setPreviewResume(resume)}
+                  className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                  title="Preview Resume"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
                 <button
                   onClick={() => handleDelete(resume._id)}
                   disabled={deletingId === resume._id}
                   className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                  title="Delete Resume"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -109,6 +119,46 @@ export default function ResumesPage() {
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      {previewResume && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-4xl h-[85vh] bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <h3 className="font-semibold text-white truncate pr-4">{previewResume.originalName}</h3>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={previewResume.filePath}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span className="hidden sm:inline">View Original</span>
+                </a>
+                <div className="h-6 w-px bg-zinc-800 mx-1"></div>
+                <button
+                  onClick={() => setPreviewResume(null)}
+                  className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 hover:text-red-400 rounded-lg transition-colors"
+                  title="Close Preview"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="flex-1 bg-zinc-950/80 relative flex overflow-hidden">
+              <ParsedResumeView data={previewResume.parsedData} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
