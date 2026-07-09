@@ -4,16 +4,13 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { BarChart3, Target, MessageSquare, Briefcase, Plus, ArrowRight } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useJobDescriptions } from "@/hooks/useAnalysis";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentAnalysisCard } from "@/components/dashboard/RecentAnalysisCard";
 import { StatCardSkeleton, ListItemSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { apiFetch } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { getGraphQLClient } from "@/lib/graphql";
-import { GET_ANALYSIS_OVERVIEW } from "@/lib/queries/analysis";
-import type { Analysis, AnalysisListMeta, JobDescription } from "@/types";
+import type { Analysis, DashboardOverviewItem } from "@/types";
 
 /** Aggregated analysis data for dashboard stats & list */
 interface DashboardAnalysis {
@@ -26,60 +23,24 @@ interface DashboardAnalysis {
   date: string;
 }
 
-/** Fetch all analyses across all job descriptions, then load full details for each */
+/** Fetch all analyses across all job descriptions via aggregated REST endpoint */
 async function fetchDashboardData(): Promise<DashboardAnalysis[]> {
-  const jobs = await apiFetch<JobDescription[]>("/api/job-descriptions");
+  const data = await apiFetch<DashboardOverviewItem[]>("/api/analyses/dashboard");
 
-  // Fetch analysis metadata for each job
-  const analysisPromises = jobs.map(async (job) => {
-    const analyses = await apiFetch<AnalysisListMeta[]>(
-      `/api/job-descriptions/${job._id}/analyses`
-    );
+  return data.map((item) => {
+    const job = item.jobDescription;
+    const a = item.analysis;
 
-    return analyses.map((a) => ({
-      ...a,
-      jobTitle: job.title,
-      jobCompany: job.company,
-    }));
+    return {
+      analysisId: a.id,
+      title: job ? job.title : "Unknown Role",
+      company: job ? job.company : "Unknown Company",
+      status: a.status,
+      atsScore: a.results?.ats?.score,
+      interviewReady: a.toolStatus?.interview === "completed",
+      date: a.createdAt,
+    } satisfies DashboardAnalysis;
   });
-
-  const nestedAnalyses = await Promise.all(analysisPromises);
-  const flatAnalyses = nestedAnalyses.flat();
-
-  // Fetch full details for each analysis via GraphQL
-  const client = getGraphQLClient();
-  const detailPromises = flatAnalyses.map(async (meta) => {
-    try {
-      const data = await client.request<{ getAnalysis: Analysis }>(
-        GET_ANALYSIS_OVERVIEW,
-        { id: meta._id }
-      );
-      const analysis = data.getAnalysis;
-      return {
-        analysisId: analysis.id,
-        title: meta.jobTitle,
-        company: meta.jobCompany,
-        status: analysis.status,
-        atsScore: analysis.results?.ats?.score,
-        interviewReady: analysis.toolStatus?.interview === "completed",
-        date: analysis.createdAt,
-      } satisfies DashboardAnalysis;
-    } catch {
-      return {
-        analysisId: meta._id,
-        title: meta.jobTitle,
-        company: meta.jobCompany,
-        status: "failed" as const,
-        interviewReady: false,
-        date: meta.createdAt,
-      } satisfies DashboardAnalysis;
-    }
-  });
-
-  const results = await Promise.all(detailPromises);
-  return results.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
 }
 
 export default function DashboardPage() {

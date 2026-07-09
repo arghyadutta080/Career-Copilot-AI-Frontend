@@ -1,3 +1,5 @@
+import type { JobDescription } from "./job-description";
+
 // ─── Analysis Types ──────────────────────────────────────────────────────────
 
 export type AnalysisStatus = "pending" | "running" | "completed" | "failed";
@@ -175,4 +177,11 @@ export interface AnalysisListMeta {
   _id: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ─── Dashboard Overview Item (Aggregated REST response) ──────────────────────
+
+export interface DashboardOverviewItem {
+  jobDescription: JobDescription | null;
+  analysis: Analysis;
 }

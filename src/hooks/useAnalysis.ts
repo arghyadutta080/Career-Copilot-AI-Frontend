@@ -15,7 +15,7 @@ import {
   GENERATE_INTERVIEW_QUESTIONS,
   GENERATE_LEARNING_ROADMAP,
 } from "@/lib/queries/analysis";
-import type { Analysis, JobDescription, AnalysisListMeta } from "@/types";
+import type { Analysis, JobDescription, DashboardOverviewItem } from "@/types";
 
 // ─── REST-based hooks (list views — lightweight) ────────────────────────────
 
@@ -27,12 +27,11 @@ export function useJobDescriptions() {
   });
 }
 
-export function useJobAnalyses(jobId: string | undefined) {
-  return useQuery<AnalysisListMeta[]>({
-    queryKey: ["job-analyses", jobId],
-    queryFn: () =>
-      apiFetch<AnalysisListMeta[]>(`/api/job-descriptions/${jobId}/analyses`),
-    enabled: !!jobId,
+export function useDashboardOverview() {
+  return useQuery<DashboardOverviewItem[]>({
+    queryKey: ["dashboard-overview"],
+    queryFn: () => apiFetch<DashboardOverviewItem[]>("/api/analyses/dashboard"),
+    staleTime: 30 * 1000,
   });
 }
 

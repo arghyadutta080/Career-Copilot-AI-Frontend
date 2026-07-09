@@ -25,4 +25,5 @@ export type {
   CoverLetterResult,
   SSEProgressEvent,
   AnalysisListMeta,
+  DashboardOverviewItem,
 } from "./analysis";

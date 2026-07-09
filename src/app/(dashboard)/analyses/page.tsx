@@ -2,15 +2,14 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import { getGraphQLClient } from "@/lib/graphql";
-import { GET_ANALYSIS_OVERVIEW } from "@/lib/queries/analysis";
 import { RecentAnalysisCard } from "@/components/dashboard/RecentAnalysisCard";
 import { ListItemSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { Analysis, AnalysisListMeta, JobDescription } from "@/types";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import type { Analysis, DashboardOverviewItem } from "@/types";
 
 interface AnalysisListItem {
   analysisId: string;
@@ -23,49 +22,22 @@ interface AnalysisListItem {
 }
 
 async function fetchAllAnalyses(): Promise<AnalysisListItem[]> {
-  const jobs = await apiFetch<JobDescription[]>("/api/job-descriptions");
-  const client = getGraphQLClient();
+  const data = await apiFetch<DashboardOverviewItem[]>("/api/analyses/dashboard");
 
-  const all = await Promise.all(
-    jobs.map(async (job) => {
-      const metas = await apiFetch<AnalysisListMeta[]>(
-        `/api/job-descriptions/${job._id}/analyses`
-      );
+  return data.map((item) => {
+    const job = item.jobDescription;
+    const a = item.analysis;
 
-      return Promise.all(
-        metas.map(async (m) => {
-          try {
-            const { getAnalysis: a } = await client.request<{
-              getAnalysis: Analysis;
-            }>(GET_ANALYSIS_OVERVIEW, { id: m._id });
-
-            return {
-              analysisId: a.id,
-              title: job.title,
-              company: job.company,
-              status: a.status,
-              atsScore: a.results?.ats?.score,
-              interviewReady: a.toolStatus?.interview === "completed",
-              date: a.createdAt,
-            } satisfies AnalysisListItem;
-          } catch {
-            return {
-              analysisId: m._id,
-              title: job.title,
-              company: job.company,
-              status: "failed" as const,
-              interviewReady: false,
-              date: m.createdAt,
-            } satisfies AnalysisListItem;
-          }
-        })
-      );
-    })
-  );
-
-  return all
-    .flat()
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return {
+      analysisId: a.id,
+      title: job ? job.title : "Unknown Role",
+      company: job ? job.company : "Unknown Company",
+      status: a.status,
+      atsScore: a.results?.ats?.score,
+      interviewReady: a.toolStatus?.interview === "completed",
+      date: a.createdAt,
+    } satisfies AnalysisListItem;
+  });
 }
 
 type StatusFilter = "all" | "completed" | "running" | "pending" | "failed";
@@ -75,7 +47,11 @@ export default function AnalysesPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<"recent" | "ats">("recent");
 
-  const { data: analyses, isLoading } = useQuery<AnalysisListItem[]>({
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const { data: analyses, isLoading, refetch } = useQuery<AnalysisListItem[]>({
     queryKey: ["all-analyses"],
     queryFn: fetchAllAnalyses,
     staleTime: 30 * 1000,
@@ -108,6 +84,56 @@ export default function AnalysesPage() {
 
     return result;
   }, [analyses, search, statusFilter, sortBy]);
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const allFilteredSelected = useMemo(() => {
+    if (filteredAnalyses.length === 0) return false;
+    return filteredAnalyses.every((a) => selectedIds.includes(a.analysisId));
+  }, [filteredAnalyses, selectedIds]);
+
+  const handleSelectAll = () => {
+    if (allFilteredSelected) {
+      const filteredIds = filteredAnalyses.map((a) => a.analysisId);
+      setSelectedIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+    } else {
+      const filteredIds = filteredAnalyses.map((a) => a.analysisId);
+      setSelectedIds((prev) => {
+        const newSelection = [...prev];
+        filteredIds.forEach((id) => {
+          if (!newSelection.includes(id)) {
+            newSelection.push(id);
+          }
+        });
+        return newSelection;
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    setDeleting(true);
+    try {
+      await Promise.all(
+        selectedIds.map((id) =>
+          apiFetch(`/api/analyses/${id}`, { method: "DELETE" }).catch((err) => {
+            console.error(`Failed to delete analysis ${id}`, err);
+          })
+        )
+      );
+      setSelectedIds([]);
+      await refetch();
+    } catch (err) {
+      console.error("Bulk deletion failed", err);
+    } finally {
+      setDeleting(false);
+      setShowConfirmModal(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -163,6 +189,33 @@ export default function AnalysesPage() {
         </select>
       </div>
 
+      {/* Selection Control Bar */}
+      {!isLoading && filteredAnalyses.length > 0 && (
+        <div className="flex items-center justify-between p-3.5 rounded-xl border border-zinc-800 bg-zinc-900/20 text-sm text-zinc-300">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="select-all"
+              checked={allFilteredSelected}
+              onChange={handleSelectAll}
+              className="h-4.5 w-4.5 rounded border-zinc-800 bg-zinc-900/60 text-violet-600 focus:ring-violet-500/50 cursor-pointer accent-violet-600"
+            />
+            <label htmlFor="select-all" className="cursor-pointer select-none font-medium text-zinc-300 hover:text-white transition-colors">
+              Select All ({filteredAnalyses.length} analyses)
+            </label>
+          </div>
+          {selectedIds.length > 0 && (
+            <button
+              onClick={() => setShowConfirmModal(true)}
+              className="flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-500 px-4 py-2 text-xs font-semibold text-white transition-all duration-200 cursor-pointer shadow-lg shadow-red-600/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete Selected ({selectedIds.length})
+            </button>
+          )}
+        </div>
+      )}
+
       {/* List */}
       {isLoading ? (
         <div className="space-y-3">
@@ -173,16 +226,25 @@ export default function AnalysesPage() {
       ) : filteredAnalyses.length > 0 ? (
         <div className="space-y-3">
           {filteredAnalyses.map((a) => (
-            <RecentAnalysisCard
-              key={a.analysisId}
-              analysisId={a.analysisId}
-              title={a.title}
-              company={a.company}
-              status={a.status}
-              atsScore={a.atsScore}
-              interviewReady={a.interviewReady}
-              date={a.date}
-            />
+            <div key={a.analysisId} className="flex items-center gap-3 w-full group">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(a.analysisId)}
+                onChange={() => handleToggleSelect(a.analysisId)}
+                className="h-4.5 w-4.5 rounded border-zinc-800 bg-zinc-900/60 text-violet-600 focus:ring-violet-500/50 cursor-pointer accent-violet-600 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <RecentAnalysisCard
+                  analysisId={a.analysisId}
+                  title={a.title}
+                  company={a.company}
+                  status={a.status}
+                  atsScore={a.atsScore}
+                  interviewReady={a.interviewReady}
+                  date={a.date}
+                />
+              </div>
+            </div>
           ))}
         </div>
       ) : (
@@ -207,6 +269,16 @@ export default function AnalysesPage() {
           }
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete Selected Analyses?"
+        message={`Are you sure you want to permanently delete the ${selectedIds.length} selected analyses? This action cannot be undone.`}
+        isLoading={deleting}
+      />
     </div>
   );
 }
