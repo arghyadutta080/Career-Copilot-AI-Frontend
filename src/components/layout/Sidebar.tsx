@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useAuthStore } from "@/stores/authStore";
+import { apiFetch } from "@/lib/api";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -30,8 +31,7 @@ export const Sidebar = memo(function Sidebar() {
 
   const handleLogout = async () => {
     try {
-      // TODO: Call the logout API endpoint once implemented:
-      // await fetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } catch (err) {
       console.error("API logout error:", err);
     }
