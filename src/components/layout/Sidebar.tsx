@@ -35,7 +35,7 @@ export const Sidebar = memo(function Sidebar() {
           <Sparkles className="h-4 w-4 text-white" />
         </div>
         <span className="text-base font-bold text-white tracking-tight">
-          AIApply
+          Career Copilot AI
         </span>
       </div>
 
