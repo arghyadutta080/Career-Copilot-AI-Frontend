@@ -14,7 +14,8 @@ import {
   ArrowRight,
   CheckCircle2,
   X,
-  Plus
+  Plus,
+  BookOpen
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import type { AuthResponse } from "@/types";
@@ -37,11 +38,18 @@ const features = [
     badge: "ATS Impact"
   },
   {
-    id: "roadmaps",
-    title: "Skill Gap & Learning Roadmaps",
-    description: "Map out missing skills and view an AI-generated learning roadmap with high-quality study resources.",
+    id: "skill-gap",
+    title: "Skill Gap Analysis",
+    description: "Analyze and identify core skill gaps between your profile and target job descriptions.",
     icon: GraduationCap,
     badge: "Skill Evolution"
+  },
+  {
+    id: "roadmaps",
+    title: "Learning Roadmaps",
+    description: "Generate structured learning paths with handpicked resources to bridge your profile gaps.",
+    icon: BookOpen,
+    badge: "Roadmap Study"
   },
   {
     id: "cover-letter",
