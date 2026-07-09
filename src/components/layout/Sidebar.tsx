@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { memo } from "react";
 import {
   LayoutDashboard,
@@ -25,7 +25,19 @@ const navItems = [
 
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      // TODO: Call the logout API endpoint once implemented:
+      // await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("API logout error:", err);
+    }
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-40 flex w-64 flex-col border-r border-zinc-800 bg-zinc-950">
@@ -87,7 +99,7 @@ export const Sidebar = memo(function Sidebar() {
               <p className="text-xs text-zinc-500 truncate">Free Plan</p>
             </div>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer rounded-lg hover:bg-zinc-800/60"
               title="Sign out"
             >
