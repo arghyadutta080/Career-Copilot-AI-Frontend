@@ -1,16 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { Briefcase, Search, Plus } from "lucide-react";
+import { Briefcase, Search, Plus, Trash2 } from "lucide-react";
 import { useJobDescriptions } from "@/hooks/useAnalysis";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListItemSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 export default function JobDescriptionsPage() {
-  const { data: jobs, isLoading } = useJobDescriptions();
+  const { data: jobs, isLoading, refetch } = useJobDescriptions();
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
+    setDeletingId(confirmDeleteId);
+    try {
+      await apiFetch(`/api/job-descriptions/${confirmDeleteId}`, { method: "DELETE" });
+      await refetch();
+    } catch (err) {
+      console.error("Failed to delete job description", err);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
 
   const filteredJobs = jobs?.filter(
     (j) =>
@@ -58,8 +76,19 @@ export default function JobDescriptionsPage() {
           ))
         ) : filteredJobs && filteredJobs.length > 0 ? (
           filteredJobs.map((job) => (
-            <Card key={job._id} className="flex flex-col h-48">
-              <div className="flex items-start gap-4 mb-4">
+            <Card key={job._id} className="flex flex-col h-48 group relative overflow-hidden">
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setConfirmDeleteId(job._id)}
+                  disabled={deletingId === job._id}
+                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                  title="Delete Job Description"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="flex items-start gap-4 mb-4 pr-6">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 font-bold">
                   {job.company.charAt(0).toUpperCase()}
                 </div>
@@ -99,6 +128,16 @@ export default function JobDescriptionsPage() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={handleDelete}
+        title="Delete Job Description?"
+        message="Are you sure you want to delete this job description? Deleting it will also permanently delete all associated analyses. This action cannot be undone."
+        isLoading={deletingId !== null}
+      />
     </div>
   );
 }

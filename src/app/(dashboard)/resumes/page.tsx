@@ -9,23 +9,26 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ListItemSkeleton } from "@/components/ui/Skeleton";
 import { apiFetch } from "@/lib/api";
 import { ParsedResumeView } from "@/components/resumes/ParsedResumeView";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 export default function ResumesPage() {
   const { data: resumes, isLoading, refetch } = useResumes();
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [previewResume, setPreviewResume] = useState<any | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
+    setDeletingId(confirmDeleteId);
     try {
-      // NOTE: Using hypothetical delete endpoint
-      await apiFetch(`/api/resumes/${id}`, { method: "DELETE" });
+      await apiFetch(`/api/resumes/${confirmDeleteId}`, { method: "DELETE" });
       await refetch();
     } catch (err) {
       console.error("Failed to delete resume", err);
     } finally {
       setDeletingId(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -79,9 +82,9 @@ export default function ResumesPage() {
                   <Eye className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(resume._id)}
+                  onClick={() => setConfirmDeleteId(resume._id)}
                   disabled={deletingId === resume._id}
-                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                   title="Delete Resume"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -159,6 +162,15 @@ export default function ResumesPage() {
           </div>
         </div>
       )}
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={handleDelete}
+        title="Delete Resume?"
+        message="Are you sure you want to delete this resume? Deleting this resume will also permanently delete all associated analyses. This action cannot be undone."
+        isLoading={deletingId !== null}
+      />
     </div>
   );
 }
