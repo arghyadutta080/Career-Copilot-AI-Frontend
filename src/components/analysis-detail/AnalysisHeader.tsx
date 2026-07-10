@@ -21,11 +21,17 @@ export const AnalysisHeader = memo(function AnalysisHeader({ analysis }: Analysi
     queryFn: () => apiFetch<JobDescription>(`/api/job-descriptions/${analysis.jobDescriptionId}`),
   });
 
-  const formattedDate = new Date(analysis.createdAt).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Support both numeric timestamp strings and standard ISO strings
+  const parsedDate = isNaN(Number(analysis.createdAt)) 
+    ? new Date(analysis.createdAt) 
+    : new Date(Number(analysis.createdAt));
+  const formattedDate = !isNaN(parsedDate.getTime())
+    ? parsedDate.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Invalid Date";
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 flex flex-col md:flex-row md:items-start justify-between gap-4">

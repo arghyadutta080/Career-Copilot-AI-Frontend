@@ -32,11 +32,15 @@ export const RecentAnalysisCard = memo(function RecentAnalysisCard({
   interviewReady,
   date,
 }: RecentAnalysisCardProps) {
-  const formattedDate = new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Support both numeric timestamp strings and standard ISO strings
+  const parsedDate = isNaN(Number(date)) ? new Date(date) : new Date(Number(date));
+  const formattedDate = !isNaN(parsedDate.getTime())
+    ? parsedDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Invalid Date";
 
   return (
     <Link
