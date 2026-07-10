@@ -61,36 +61,36 @@ export const RecentAnalysisCard = memo(function RecentAnalysisCard({
       </div>
 
       {/* Status */}
-      <Badge variant={statusVariantMap[status]} dot className="shrink-0">
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
+      <div className="shrink-0 w-24 sm:w-28 flex items-center justify-start">
+        <Badge variant={statusVariantMap[status]} dot>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+      </div>
 
-      {/* ATS Score */}
-      {atsScore !== undefined && status === "completed" && (
-        <div className="hidden sm:flex flex-col items-end shrink-0 w-20">
-          <span className="text-xs text-zinc-500">ATS Score</span>
-          <div className="flex items-center gap-2">
+      {/* ATS Score / Progress */}
+      <div className="hidden sm:flex flex-col items-center justify-center shrink-0 w-24">
+        {atsScore !== undefined && status === "completed" ? (
+          <>
+            <span className="text-xs text-zinc-500">ATS Score</span>
             <span className="text-sm font-semibold text-white">{atsScore}%</span>
+          </>
+        ) : status === "running" ? (
+          <div className="w-full pt-1.5">
+            <ProgressBar value={50} color="blue" />
           </div>
-        </div>
-      )}
-
-      {status === "running" && (
-        <div className="hidden sm:block w-24 shrink-0">
-          <ProgressBar value={50} color="blue" />
-        </div>
-      )}
+        ) : null}
+      </div>
 
       {/* Interview status */}
-      {status === "completed" && (
-        <div className="hidden md:block shrink-0">
-          {interviewReady ? (
+      <div className="hidden md:flex items-center justify-start shrink-0 w-40">
+        {status === "completed" && (
+          interviewReady ? (
             <Badge variant="success" dot>Interview Ready</Badge>
           ) : (
             <Badge variant="warning">Not Interview Ready</Badge>
-          )}
-        </div>
-      )}
+          )
+        )}
+      </div>
 
       {/* Date */}
       <span className="hidden lg:block text-xs text-zinc-500 shrink-0 w-24 text-right">
