@@ -31,6 +31,17 @@ interface AnalysisProgressState {
   isGeneratingRoadmap: boolean;
   setIsGeneratingRoadmap: (isGenerating: boolean) => void;
   generationStartTimeRoadmap: number | null;
+
+  isEnrichingRoadmap: boolean;
+  setIsEnrichingRoadmap: (isEnriching: boolean) => void;
+
+  /**
+   * Flat map of resource id → YouTube URLs populated after enrichment.
+   * Stored separately from the roadmap so ResourceUrls components can
+   * subscribe to only their own slice without re-rendering the whole tree.
+   */
+  resourceUrlMap: Record<string, string[]>;
+  setResourceUrlMap: (map: Record<string, string[]>) => void;
 }
 
 export const useAnalysisProgressStore = create<AnalysisProgressState>(
@@ -42,13 +53,26 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
     hasError: false,
 
     addEvent: (event) =>
-      set((state) => ({
-        events: [...state.events, event],
-        currentStep: event.step,
-        progress: event.progress,
-        isComplete: event.progress >= 100,
-        hasError: event.type === "error",
-      })),
+      set((state) => {
+        const isRoadmapResourcesLoaded =
+          event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
+
+        const newState: Partial<AnalysisProgressState> = {
+          events: [...state.events, event],
+          currentStep: event.step,
+          progress: event.progress,
+          isComplete: event.progress >= 100 || isRoadmapResourcesLoaded,
+          hasError: event.type === "error",
+        };
+
+        if (event.type === "error") {
+          newState.isGeneratingInterview = false;
+          newState.isGeneratingRoadmap = false;
+          newState.isEnrichingRoadmap = false;
+        }
+
+        return newState;
+      }),
 
     reset: () =>
       set({
@@ -57,6 +81,8 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
         progress: 0,
         isComplete: false,
         hasError: false,
+        isEnrichingRoadmap: false,
+        resourceUrlMap: {},
       }),
 
     isGeneratingInterview: false,
@@ -74,5 +100,12 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
         isGeneratingRoadmap: isGenerating,
         generationStartTimeRoadmap: isGenerating ? Date.now() : null
       }),
+
+    isEnrichingRoadmap: false,
+    setIsEnrichingRoadmap: (isEnriching) =>
+      set({ isEnrichingRoadmap: isEnriching }),
+
+    resourceUrlMap: {},
+    setResourceUrlMap: (map) => set({ resourceUrlMap: map }),
   })
 );

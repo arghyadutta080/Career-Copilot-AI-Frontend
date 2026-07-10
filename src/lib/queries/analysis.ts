@@ -205,10 +205,11 @@ export const GET_ANALYSIS_LEARNING_ROADMAP = gql`
               priority
               estimatedHours
               resources {
+                id
                 title
-                type
                 query
                 reason
+                urls
               }
               outcomes
             }

@@ -67,10 +67,11 @@ export interface InterviewResult {
 // ─── Roadmap ─────────────────────────────────────────────────────────────────
 
 export interface LearningResource {
+  id?: string;
   title: string;
-  type: string;
   query: string;
   reason: string;
+  urls?: string[];
 }
 
 export interface RoadmapStep {
@@ -164,11 +165,11 @@ export interface Analysis {
 // ─── SSE Events ──────────────────────────────────────────────────────────────
 
 export interface SSEProgressEvent {
-  type: "progress" | "complete" | "error";
+  type: "progress" | "complete" | "error" | "roadmap_resources_updated";
   step: string;
   message: string;
   progress: number;
-  data?: Record<string, unknown>;
+  data?: any;
 }
 
 // ─── Analysis List Item (lightweight for list views) ─────────────────────────

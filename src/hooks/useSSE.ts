@@ -39,7 +39,15 @@ export function useSSE(analysisId: string | undefined, enabled = true) {
         queryClient.invalidateQueries({ queryKey: ["analysis-status", analysisId] });
 
         // Auto-disconnect and fetch full data when pipeline is complete
-        if (event.progress >= 100) {
+        const isRoadmapEvent = event.step === "Learning Roadmap";
+        const isYouTubeLoaded = event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
+
+        if (isRoadmapEvent) {
+          if (isYouTubeLoaded) {
+            queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
+            disconnect();
+          }
+        } else if (event.progress >= 100) {
           queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
           disconnect();
         }
