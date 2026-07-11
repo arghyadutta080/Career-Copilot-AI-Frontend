@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Tabs } from "@/components/ui/Tabs";
 import { Card } from "@/components/ui/Card";
-import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageSquare, Lock } from "lucide-react";
 import { useAnalysisInterview, useGenerateInterview, useGenerateInterviewAnswer } from "@/hooks/useAnalysis";
 import { GeneratingUI } from "@/components/ui/GeneratingUI";
 import { TabContentSkeleton } from "@/components/ui/Skeleton";
@@ -17,30 +17,31 @@ interface InterviewTabProps {
   status?: string;
 }
 
+export const getAnswerObj = (question: InterviewQuestion): InterviewAnswer => {
+  const ans = question.answer;
+  if (!ans) {
+    return { content: null, status: "not_started", generatedAt: null };
+  }
+  if (typeof ans === "string") {
+    return { content: ans, status: "completed", generatedAt: null };
+  }
+  return {
+    content: ans.content ?? null,
+    status: ans.status ?? "not_started",
+    generatedAt: ans.generatedAt ?? null
+  };
+};
+
 interface AnswerSectionProps {
   q: InterviewQuestion;
   analysisId: string;
+  disabledReason?: string;
 }
 
-function AnswerSection({ q, analysisId }: AnswerSectionProps) {
+function AnswerSection({ q, analysisId, disabledReason }: AnswerSectionProps) {
   const queryClient = useQueryClient();
   const { mutate: generateAnswer, isPending } = useGenerateInterviewAnswer();
   const { events, setIsGeneratingAnswer } = useAnalysisProgressStore();
-
-  const getAnswerObj = (question: InterviewQuestion): InterviewAnswer => {
-    const ans = question.answer;
-    if (!ans) {
-      return { content: null, status: "not_started", generatedAt: null };
-    }
-    if (typeof ans === "string") {
-      return { content: ans, status: "completed", generatedAt: null };
-    }
-    return {
-      content: ans.content ?? null,
-      status: ans.status ?? "not_started",
-      generatedAt: ans.generatedAt ?? null
-    };
-  };
 
   const answerObj = getAnswerObj(q);
 
@@ -72,6 +73,17 @@ function AnswerSection({ q, analysisId }: AnswerSectionProps) {
       }
     );
   };
+
+  if (disabledReason && !isCompleted) {
+    return (
+      <div className="py-4 text-center space-y-2 bg-zinc-900/10 rounded-lg border border-zinc-800/40 p-4">
+        <p className="text-xs text-zinc-500 font-semibold inline-flex items-center gap-1.5 justify-center">
+          <Lock className="h-3.5 w-3.5 text-zinc-600" />
+          {disabledReason}
+        </p>
+      </div>
+    );
+  }
 
   if (isCompleted) {
     const contentToShow = answerObj.content || streamedText;
@@ -153,6 +165,21 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
   const interview = analysis?.results?.interview;
   const [activeCategory, setActiveCategory] = useState("resume");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedFollowUpId, setExpandedFollowUpId] = useState<string | null>(null);
+
+  const findParentQuestionObj = (parentQuestionText: string): InterviewQuestion | null => {
+    const cats = ["hr", "resumeBased", "experienceBased", "projectBased", "technical", "coding", "behavioral"];
+    for (const cat of cats) {
+      const list = (interview as any)?.[cat];
+      if (list && Array.isArray(list)) {
+        const found = list.find((q: any) => q.question === parentQuestionText);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+
 
   useEffect(() => {
     if (isGeneratingInterview) {
@@ -292,35 +319,69 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
                     )}
                   </button>
 
-                  {isExpanded && group.followUps && (
-                    <div className="px-5 pb-5 pt-4 border-t border-zinc-800 bg-zinc-900/20 space-y-4">
-                      {group.followUps.map((q: InterviewQuestion, j: number) => (
-                        <div key={q.id || j} className="pl-4 border-l-2 border-violet-500/30 space-y-2 py-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-violet-400 bg-violet-500/5 px-2 py-0.5 rounded border border-violet-500/15">
-                              Follow-up {j + 1}
-                            </span>
-                            {q.difficulty && (
-                              <span className="text-xs font-medium text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">
-                                {q.difficulty}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium text-zinc-300">{q.question}</p>
-                          {q.topics && q.topics.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-1">
-                              {q.topics.map((topic, k) => (
-                                <span key={k} className="inline-flex items-center rounded bg-zinc-800/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 border border-zinc-700/30">
-                                  {topic}
-                                </span>
-                              ))}
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-4 border-t border-zinc-800 bg-zinc-900/10 space-y-4">
+                      {/* Main Question Answer Area */}
+                      {(() => {
+                        const parentQObj = findParentQuestionObj(group.parentQuestion);
+                        if (!parentQObj) return null;
+                        return (
+                          <div className="mb-6 p-5 rounded-xl border border-zinc-800 bg-zinc-900/40 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h5 className="text-sm font-semibold text-violet-400">Main Question: {group.parentQuestion}</h5>
                             </div>
-                          )}
-                          <div className="mt-3">
-                            <AnswerSection q={q} analysisId={analysisId} />
+                            <AnswerSection q={parentQObj} analysisId={analysisId} />
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })()}
+
+                      {/* Follow-up Questions collapsible row list */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Follow-up Questions</p>
+                        {group.followUps && group.followUps.map((q: InterviewQuestion, j: number) => {
+                          const isFollowUpExpanded = expandedFollowUpId === q.id;
+
+                          return (
+                            <div key={q.id || j} className="border border-zinc-800/80 rounded-xl bg-zinc-950/60 overflow-hidden">
+                              <button
+                                onClick={() => setExpandedFollowUpId(isFollowUpExpanded ? null : q.id)}
+                                className="w-full flex items-center justify-between p-4 text-left hover:bg-zinc-800/20 transition-colors"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-xs font-bold text-zinc-400">
+                                    F{j + 1}
+                                  </span>
+                                  <div>
+                                    <h5 className="text-sm font-medium text-zinc-200">{q.question}</h5>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      {q.difficulty && (
+                                        <span className="text-[10px] font-medium text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">
+                                          {q.difficulty}
+                                        </span>
+                                      )}
+                                      {q.topics?.map((topic, k) => (
+                                        <span key={k} className="text-[10px] font-medium text-violet-400 bg-violet-500/5 px-1.5 py-0.5 rounded border border-violet-500/10">
+                                          {topic}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                {isFollowUpExpanded ? (
+                                  <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
+                                )}
+                              </button>
+                              {isFollowUpExpanded && (
+                                <div className="p-4 border-t border-zinc-800/60 bg-zinc-900/10">
+                                  <AnswerSection q={q} analysisId={analysisId} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </Card>
