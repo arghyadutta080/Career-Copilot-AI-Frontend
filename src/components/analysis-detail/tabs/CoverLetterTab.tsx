@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Copy, CheckCircle2 } from "lucide-react";
 import { useAnalysisCoverLetter } from "@/hooks/useAnalysis";
 import { TabContentSkeleton } from "@/components/ui/Skeleton";
+import ReactMarkdown from "react-markdown";
 
 interface CoverLetterTabProps {
   analysisId: string;
@@ -63,9 +64,52 @@ export function CoverLetterTab({ analysisId }: CoverLetterTabProps) {
           </p>
         </div>
         <div className="prose prose-invert max-w-none text-zinc-300">
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+          {/* <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
             {coverLetter.content}
-          </pre>
+          </pre> */}
+          <ReactMarkdown
+            components={{
+              h1: ({ node, ...props }) => (
+                <h1
+                  className="text-xl font-bold text-white mt-6 mb-2 first:mt-0"
+                  {...props}
+                />
+              ),
+              h2: ({ node, ...props }) => (
+                <h2
+                  className="text-lg font-bold text-white mt-5 mb-2 first:mt-0"
+                  {...props}
+                />
+              ),
+              h3: ({ node, ...props }) => (
+                <h3
+                  className="text-base font-bold text-white mt-4 mb-2 first:mt-0"
+                  {...props}
+                />
+              ),
+              p: ({ node, ...props }) => (
+                <p className="mb-3 last:mb-0 text-sm text-zinc-300" {...props} />
+              ),
+              ul: ({ node, ...props }) => (
+                <ul
+                  className="list-disc pl-5 mb-4 space-y-1 text-sm text-zinc-300"
+                  {...props}
+                />
+              ),
+              ol: ({ node, ...props }) => (
+                <ol
+                  className="list-decimal pl-5 mb-4 space-y-1 text-zinc-300"
+                  {...props}
+                />
+              ),
+              li: ({ node, ...props }) => <li className="mb-0.5" {...props} />,
+              strong: ({ node, ...props }) => (
+                <strong className="font-semibold text-white" {...props} />
+              ),
+            }}
+          >
+            {coverLetter.content?.replace(/<br\s*\/?>/gi, "  \n")}
+          </ReactMarkdown>
         </div>
       </Card>
     </div>
