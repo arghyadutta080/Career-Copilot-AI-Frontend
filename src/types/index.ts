@@ -12,6 +12,7 @@ export type {
   LearningPriorityItem,
   InterviewResult,
   InterviewQuestion,
+  InterviewAnswer,
   InterviewFollowUp,
   LearningRoadmap,
   RoadmapMilestone,

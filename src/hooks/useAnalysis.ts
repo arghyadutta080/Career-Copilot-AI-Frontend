@@ -14,6 +14,7 @@ import {
   START_ANALYSIS,
   GENERATE_INTERVIEW_QUESTIONS,
   GENERATE_LEARNING_ROADMAP,
+  GENERATE_INTERVIEW_ANSWER,
 } from "@/lib/queries/analysis";
 import type { Analysis, JobDescription, DashboardOverviewItem } from "@/types";
 
@@ -226,6 +227,15 @@ export function useGenerateRoadmap() {
     onSuccess: (_data, analysisId) => {
       queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
       queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "roadmap"] });
+    },
+  });
+}
+
+export function useGenerateInterviewAnswer() {
+  return useMutation({
+    mutationFn: async ({ analysisId, questionId }: { analysisId: string; questionId: string }) => {
+      const client = getGraphQLClient();
+      await client.request(GENERATE_INTERVIEW_ANSWER, { analysisId, questionId });
     },
   });
 }

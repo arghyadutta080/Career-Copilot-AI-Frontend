@@ -15,7 +15,7 @@ export function connectSSE(
   onError?: (error: Event) => void
 ): () => void {
   const url = `${BASE_URL}/api/stream/${analysisId}`;
-  const eventSource = new EventSource(url);
+  const eventSource = new EventSource(url, { withCredentials: true });
 
   eventSource.onmessage = (e) => {
     try {

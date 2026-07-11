@@ -24,8 +24,8 @@ const pipelineSteps = [
 
 export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgressProps) {
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
-  // Connect to SSE stream
-  useSSE(analysisId);
+  // Connect to SSE stream; reset events on connect since this is a full pipeline run
+  useSSE(analysisId, true, true);
   const { progress, currentStep, hasError, events } = useAnalysisProgressStore();
 
   const getStepStatus = (

@@ -40,12 +40,18 @@ export interface SkillGapResult {
 
 // ─── Interview ───────────────────────────────────────────────────────────────
 
+export interface InterviewAnswer {
+  content: string | null;
+  status: "not_started" | "generating" | "completed" | "failed";
+  generatedAt: string | null;
+}
+
 export interface InterviewQuestion {
   id: string;
   question: string;
   difficulty?: string;
   topics?: string[];
-  answer?: string;
+  answer: InterviewAnswer;
 }
 
 export interface InterviewFollowUp {
@@ -165,11 +171,13 @@ export interface Analysis {
 // ─── SSE Events ──────────────────────────────────────────────────────────────
 
 export interface SSEProgressEvent {
-  type: "progress" | "complete" | "error" | "roadmap_resources_updated";
-  step: string;
-  message: string;
-  progress: number;
+  type: "progress" | "complete" | "error" | "roadmap_resources_updated" | "answer_started" | "answer_delta" | "answer_completed" | "answer_error";
+  step?: string;
+  message?: string;
+  progress?: number;
   data?: any;
+  questionId?: string;
+  delta?: string;
 }
 
 // ─── Analysis List Item (lightweight for list views) ─────────────────────────

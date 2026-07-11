@@ -4,16 +4,144 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Tabs } from "@/components/ui/Tabs";
 import { Card } from "@/components/ui/Card";
 import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
-import { useAnalysisInterview, useGenerateInterview } from "@/hooks/useAnalysis";
+import { useAnalysisInterview, useGenerateInterview, useGenerateInterviewAnswer } from "@/hooks/useAnalysis";
 import { GeneratingUI } from "@/components/ui/GeneratingUI";
 import { TabContentSkeleton } from "@/components/ui/Skeleton";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
-import type { InterviewQuestion, InterviewFollowUp } from "@/types";
+import type { InterviewQuestion, InterviewFollowUp, InterviewAnswer } from "@/types";
 import { useEffect, useState } from "react";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 
 interface InterviewTabProps {
   analysisId: string;
   status?: string;
+}
+
+interface AnswerSectionProps {
+  q: InterviewQuestion;
+  analysisId: string;
+}
+
+function AnswerSection({ q, analysisId }: AnswerSectionProps) {
+  const queryClient = useQueryClient();
+  const { mutate: generateAnswer, isPending } = useGenerateInterviewAnswer();
+  const { events, setIsGeneratingAnswer } = useAnalysisProgressStore();
+
+  const getAnswerObj = (question: InterviewQuestion): InterviewAnswer => {
+    const ans = question.answer;
+    if (!ans) {
+      return { content: null, status: "not_started", generatedAt: null };
+    }
+    if (typeof ans === "string") {
+      return { content: ans, status: "completed", generatedAt: null };
+    }
+    return {
+      content: ans.content ?? null,
+      status: ans.status ?? "not_started",
+      generatedAt: ans.generatedAt ?? null
+    };
+  };
+
+  const answerObj = getAnswerObj(q);
+
+  const categoryEvents = events.filter((e) => e.questionId === q.id);
+  const hasStartEvent = categoryEvents.some((e) => e.type === "answer_started");
+  const hasCompleteEvent = categoryEvents.some((e) => e.type === "answer_completed");
+  const hasErrorEvent = categoryEvents.some((e) => e.type === "answer_error");
+
+  const isGeneratingLocally = hasStartEvent && !hasCompleteEvent && !hasErrorEvent;
+  const isGenerating = answerObj.status === "generating" || isGeneratingLocally;
+  const isCompleted = answerObj.status === "completed" || (hasCompleteEvent && !isGeneratingLocally);
+  const isFailed = answerObj.status === "failed" || (hasErrorEvent && !isGeneratingLocally);
+
+  const streamedText = categoryEvents
+    .filter((e) => e.type === "answer_delta")
+    .map((e) => e.delta)
+    .join("");
+
+  const handleGenerateAnswer = () => {
+    // Activate SSE connection BEFORE firing mutation so we don't miss any events
+    setIsGeneratingAnswer(true);
+    generateAnswer(
+      { analysisId, questionId: q.id },
+      {
+        onError: () => {
+          // If the mutation itself fails (network/GQL error), clear the flag
+          setIsGeneratingAnswer(false);
+        },
+      }
+    );
+  };
+
+  if (isCompleted) {
+    const contentToShow = answerObj.content || streamedText;
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            Suggested Answer
+          </p>
+          <button
+            onClick={handleGenerateAnswer}
+            className="hidden text-xs text-violet-400 hover:text-violet-300 font-semibold"
+          >
+            Regenerate Answer
+          </button>
+        </div>
+        <div className="mt-2">
+          <MarkdownRenderer className="text-sm">
+            {contentToShow || ""}
+          </MarkdownRenderer>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-violet-400 text-xs font-semibold">
+          <div className="animate-spin h-3.5 w-3.5 border-2 border-violet-500 border-t-transparent rounded-full" />
+          <span>Generating answer...</span>
+        </div>
+        <div className="mt-2">
+          <MarkdownRenderer className="text-sm">
+            {streamedText || "*AI is typing...*"}
+          </MarkdownRenderer>
+        </div>
+      </div>
+    );
+  }
+
+  if (isFailed) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-red-400 text-xs font-semibold">
+          <span>Failed to generate answer. Please try again.</span>
+        </div>
+        <button
+          onClick={handleGenerateAnswer}
+          disabled={isPending}
+          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold px-4 py-2 rounded-lg border border-red-500/20 transition-all cursor-pointer"
+        >
+          Retry Generation
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-4 text-center space-y-3 bg-zinc-900/20 rounded-lg border border-zinc-800/40 p-4">
+      <p className="text-sm text-zinc-400 font-semibold">No answer generated for this question yet.</p>
+      <button
+        onClick={handleGenerateAnswer}
+        disabled={isPending}
+        className="bg-violet-600 hover:bg-violet-700 disabled:bg-violet-600/50 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-violet-500/10 inline-flex items-center gap-2 cursor-pointer"
+      >
+        {isPending ? "Starting..." : "Generate Answer"}
+      </button>
+    </div>
+  );
 }
 
 export function InterviewTab({ analysisId, status }: InterviewTabProps) {
@@ -38,6 +166,21 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
       }
     }
   }, [events, isGeneratingInterview, analysisId, queryClient, setIsGeneratingInterview]);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      const latest = events[events.length - 1];
+      if (
+        latest &&
+        (latest.type === "answer_started" ||
+          latest.type === "answer_completed" ||
+          latest.type === "answer_error")
+      ) {
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
+      }
+    }
+  }, [events, analysisId, queryClient]);
 
   const handleGenerate = () => {
     setIsGeneratingInterview(true);
@@ -173,16 +316,9 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
                               ))}
                             </div>
                           )}
-                          {q.answer && (
-                            <div className="mt-2 bg-zinc-950/40 p-3 rounded-lg border border-zinc-800/50">
-                              <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                                Suggested Answer
-                              </p>
-                              <p className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">
-                                {q.answer}
-                              </p>
-                            </div>
-                          )}
+                          <div className="mt-3">
+                            <AnswerSection q={q} analysisId={analysisId} />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -231,14 +367,9 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
                     )}
                   </button>
                   
-                  {isExpanded && q.answer && (
-                    <div className="px-5 pb-5 pt-2 border-t border-zinc-800/60 bg-zinc-900/40">
-                      <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
-                        Suggested Answer
-                      </p>
-                      <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                        {q.answer}
-                      </div>
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-3 border-t border-zinc-800/60 bg-zinc-900/40">
+                      <AnswerSection q={q} analysisId={analysisId} />
                     </div>
                   )}
                 </Card>

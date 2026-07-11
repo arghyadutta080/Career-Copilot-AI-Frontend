@@ -132,45 +132,73 @@ export const GET_ANALYSIS_INTERVIEW_PREP = gql`
             question
             difficulty
             topics
-            answer
+            answer {
+              content
+              status
+              generatedAt
+            }
           }
           resumeBased {
             id
             question
             topics
-            answer
+            answer {
+              content
+              status
+              generatedAt
+            }
           }
           experienceBased {
             id
             question
             topics
-            answer
+            answer {
+              content
+              status
+              generatedAt
+            }
           }
           projectBased {
             id
             question
             topics
-            answer
+            answer {
+              content
+              status
+              generatedAt
+            }
           }
           technical {
             id
             question
             difficulty
             topics
-            answer
+            answer {
+              content
+              status
+              generatedAt
+            }
           }
           coding {
             id
             question
             difficulty
             topics
-            answer
+            answer {
+              content
+              status
+              generatedAt
+            }
           }
           behavioral {
             id
             question
             topics
-            answer
+            answer {
+              content
+              status
+              generatedAt
+            }
           }
           followUps {
             parentQuestion
@@ -179,7 +207,11 @@ export const GET_ANALYSIS_INTERVIEW_PREP = gql`
               question
               difficulty
               topics
-              answer
+              answer {
+                content
+                status
+                generatedAt
+              }
             }
           }
         }
@@ -265,5 +297,11 @@ export const GENERATE_INTERVIEW_QUESTIONS = gql`
 export const GENERATE_LEARNING_ROADMAP = gql`
   mutation GenerateLearningRoadmap($analysisId: ID!) {
     generateLearningRoadmap(analysisId: $analysisId)
+  }
+`;
+
+export const GENERATE_INTERVIEW_ANSWER = gql`
+  mutation GenerateInterviewAnswer($analysisId: ID!, $questionId: ID!) {
+    generateInterviewAnswer(analysisId: $analysisId, questionId: $questionId)
   }
 `;

@@ -35,6 +35,10 @@ interface AnalysisProgressState {
   isEnrichingRoadmap: boolean;
   setIsEnrichingRoadmap: (isEnriching: boolean) => void;
 
+  /** Whether an on-demand answer is currently being streamed */
+  isGeneratingAnswer: boolean;
+  setIsGeneratingAnswer: (value: boolean) => void;
+
   /**
    * Flat map of resource id → YouTube URLs populated after enrichment.
    * Stored separately from the roadmap so ResourceUrls components can
@@ -54,14 +58,28 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
 
     addEvent: (event) =>
       set((state) => {
+        if (
+          event.type === "answer_started" ||
+          event.type === "answer_delta" ||
+          event.type === "answer_completed" ||
+          event.type === "answer_error"
+        ) {
+          const isDone = event.type === "answer_completed" || event.type === "answer_error";
+          return {
+            events: [...state.events, event],
+            hasError: event.type === "answer_error",
+            ...(isDone ? { isGeneratingAnswer: false } : {}),
+          };
+        }
+
         const isRoadmapResourcesLoaded =
           event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
 
         const newState: Partial<AnalysisProgressState> = {
           events: [...state.events, event],
-          currentStep: event.step,
-          progress: event.progress,
-          isComplete: event.progress >= 100 || isRoadmapResourcesLoaded,
+          currentStep: event.step || "",
+          progress: event.progress ?? 0,
+          isComplete: (event.progress !== undefined && event.progress >= 100) || isRoadmapResourcesLoaded,
           hasError: event.type === "error",
         };
 
@@ -82,6 +100,7 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
         isComplete: false,
         hasError: false,
         isEnrichingRoadmap: false,
+        isGeneratingAnswer: false,
         resourceUrlMap: {},
       }),
 
@@ -104,6 +123,9 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
     isEnrichingRoadmap: false,
     setIsEnrichingRoadmap: (isEnriching) =>
       set({ isEnrichingRoadmap: isEnriching }),
+
+    isGeneratingAnswer: false,
+    setIsGeneratingAnswer: (value) => set({ isGeneratingAnswer: value }),
 
     resourceUrlMap: {},
     setResourceUrlMap: (map) => set({ resourceUrlMap: map }),

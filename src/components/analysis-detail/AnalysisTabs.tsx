@@ -30,10 +30,12 @@ const tabItems = [
 
 export function AnalysisTabs({ analysis }: AnalysisTabsProps) {
   const [activeTab, setActiveTab] = useState("overview");
-  const { isGeneratingInterview, isGeneratingRoadmap, isEnrichingRoadmap } = useAnalysisProgressStore();
+  const { isGeneratingInterview, isGeneratingRoadmap, isEnrichingRoadmap, isGeneratingAnswer } = useAnalysisProgressStore();
 
-  // Keep SSE connection alive across tab switches if generation or enrichment is ongoing
-  useSSE(analysis.id, isGeneratingInterview || isGeneratingRoadmap || isEnrichingRoadmap);
+  // Keep SSE connection alive across tab switches if generation or enrichment is ongoing.
+  // resetOnConnect=true only for pipeline runs, not for on-demand answer generation.
+  const isPipelineRunning = isGeneratingInterview || isGeneratingRoadmap || isEnrichingRoadmap;
+  useSSE(analysis.id, isPipelineRunning || isGeneratingAnswer, isPipelineRunning);
 
   return (
     <div className="space-y-6">

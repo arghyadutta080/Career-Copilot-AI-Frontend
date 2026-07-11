@@ -10,7 +10,7 @@ import type { SSEProgressEvent } from "@/types";
  * Hook to manage SSE connection for a running analysis.
  * Automatically connects when analysisId is provided and disconnects on cleanup.
  */
-export function useSSE(analysisId: string | undefined, enabled = true) {
+export function useSSE(analysisId: string | undefined, enabled = true, resetOnConnect = false) {
   const queryClient = useQueryClient();
   const cleanupRef = useRef<(() => void) | null>(null);
   const { addEvent, reset } = useAnalysisProgressStore();
@@ -28,15 +28,26 @@ export function useSSE(analysisId: string | undefined, enabled = true) {
       return;
     }
 
-    reset();
+    if (resetOnConnect) {
+      reset();
+    }
 
     const cleanup = connectSSE(
       analysisId,
       (event: SSEProgressEvent) => {
         addEvent(event);
 
-        // Invalidate the status query to fetch the latest tool statuses in the background
-        queryClient.invalidateQueries({ queryKey: ["analysis-status", analysisId] });
+        const isAnswerEvent =
+          event.type === "answer_started" ||
+          event.type === "answer_delta" ||
+          event.type === "answer_completed" ||
+          event.type === "answer_error";
+
+        if (!isAnswerEvent) {
+          // Only pipeline events (progress/complete/error) can change toolStatus —
+          // no need to refetch GetAnalysisStatus on every answer token.
+          queryClient.invalidateQueries({ queryKey: ["analysis-status", analysisId] });
+        }
 
         // Auto-disconnect and fetch full data when pipeline is complete
         const isRoadmapEvent = event.step === "Learning Roadmap";
@@ -47,7 +58,7 @@ export function useSSE(analysisId: string | undefined, enabled = true) {
             queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
             disconnect();
           }
-        } else if (event.progress >= 100) {
+        } else if (!isAnswerEvent && event.progress !== undefined && event.progress >= 100) {
           queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
           disconnect();
         }
@@ -62,7 +73,7 @@ export function useSSE(analysisId: string | undefined, enabled = true) {
     return () => {
       disconnect();
     };
-  }, [analysisId, enabled, addEvent, reset, disconnect, queryClient]);
+  }, [analysisId, enabled, resetOnConnect, addEvent, reset, disconnect, queryClient]);
 
   return { disconnect };
 }
