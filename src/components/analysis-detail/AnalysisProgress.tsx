@@ -156,6 +156,15 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
         </p>
       </div>
 
+      {progress < 100 && (
+        <div className="flex gap-2.5 items-start p-3.5 rounded-xl border border-zinc-800 bg-zinc-900/20 text-zinc-400 text-xs">
+          <AlertCircle className="h-4 w-4 text-violet-400 shrink-0 mt-0.5" />
+          <p className="leading-relaxed text-left">
+            If you leave this screen, these live progress logs will be cleared. However, your analysis will continue running in the background and will be fully previewable in your dashboard once completed.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
         <div className="flex justify-between text-xs text-zinc-500 font-medium">
           <span>Overall Progress</span>
@@ -171,6 +180,7 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
       <div className="space-y-4 pt-4">
         {pipelineSteps.map((step) => {
           const status = getStepStatus(step.id);
+          const hasEventData = events.some((e) => e.step === step.name && e.data);
 
           return (
             <div
@@ -187,9 +197,12 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
               )}
             >
               <button
-                disabled={status !== "completed"}
+                disabled={status !== "completed" || !hasEventData}
                 onClick={() => setExpandedStep(expandedStep === step.id ? null : step.id)}
-                className="w-full flex items-center gap-4 p-4 text-left focus:outline-none"
+                className={cn(
+                  "w-full flex items-center gap-4 p-4 text-left focus:outline-none",
+                  status === "completed" && !hasEventData ? "cursor-default" : "cursor-pointer"
+                )}
               >
                 <div className="shrink-0">
                   {status === "completed" && (
@@ -221,7 +234,7 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
                     {step.label}
                   </p>
                 </div>
-                {status === "completed" && (
+                {status === "completed" && hasEventData && (
                   <div className="shrink-0">
                     {expandedStep === step.id ? (
                       <ChevronUp className="h-5 w-5 text-emerald-500/50" />

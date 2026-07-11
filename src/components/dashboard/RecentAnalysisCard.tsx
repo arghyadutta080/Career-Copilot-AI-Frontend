@@ -42,11 +42,9 @@ export const RecentAnalysisCard = memo(function RecentAnalysisCard({
       })
     : "Invalid Date";
 
-  return (
-    <Link
-      href={`/analyses/${analysisId}`}
-      className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/70 group"
-    >
+  const isCompleted = status === "completed";
+  const innerContent = (
+    <>
       {/* Company icon placeholder */}
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600/20 to-indigo-600/20 text-violet-400 font-bold text-sm border border-violet-500/10">
         {company ? company.charAt(0).toUpperCase() : title.charAt(0).toUpperCase()}
@@ -96,6 +94,26 @@ export const RecentAnalysisCard = memo(function RecentAnalysisCard({
       <span className="hidden lg:block text-xs text-zinc-500 shrink-0 w-24 text-right">
         {formattedDate}
       </span>
+    </>
+  );
+
+  if (!isCompleted) {
+    return (
+      <div
+        className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/10 p-4 opacity-50 cursor-not-allowed select-none"
+        title={`Analysis is currently ${status}. You can view the details page once completed.`}
+      >
+        {innerContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/analyses/${analysisId}`}
+      className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/70 group"
+    >
+      {innerContent}
     </Link>
   );
 });
