@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import { CheckCircle2, Circle, Loader2, AlertCircle, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -8,7 +8,7 @@ import { useSSE } from "@/hooks/useSSE";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import type { Analysis, ToolStatusValue } from "@/types";
+import type { Analysis, ToolStatusValue, SSEProgressEvent } from "@/types";
 
 interface AnalysisProgressProps {
   analysisId: string;
@@ -26,13 +26,58 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   // Connect to SSE stream; reset events on connect since this is a full pipeline run
   useSSE(analysisId, true, true);
-  const { progress, currentStep, hasError, events } = useAnalysisProgressStore();
+  const { events: storeEvents } = useAnalysisProgressStore();
+
+  const [localEvents, setLocalEvents] = useState<SSEProgressEvent[]>([]);
+
+  // Synchronize with localStorage
+  useEffect(() => {
+    try {
+      const key = `analysis-progress-events-${analysisId}`;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        setLocalEvents(JSON.parse(stored));
+      } else {
+        setLocalEvents([]);
+      }
+    } catch (err) {
+      console.warn("Failed to load events from localStorage:", err);
+    }
+  }, [analysisId, storeEvents]);
+
+  const progress = useMemo(() => {
+    if (initialStatus?.status === "completed") return 100;
+    if (localEvents.length === 0) return 0;
+    const lastEvent = localEvents[localEvents.length - 1];
+    return lastEvent.progress ?? 0;
+  }, [localEvents, initialStatus]);
+
+  const currentStep = useMemo(() => {
+    if (localEvents.length === 0) return "";
+    const lastEvent = localEvents[localEvents.length - 1];
+    return lastEvent.step || "";
+  }, [localEvents]);
+
+  const hasError = useMemo(() => {
+    return localEvents.some((e) => e.type === "error");
+  }, [localEvents]);
+
+  // Cleanup localStorage progress events once completed
+  useEffect(() => {
+    if (initialStatus?.status === "completed" || progress === 100) {
+      try {
+        localStorage.removeItem(`analysis-progress-events-${analysisId}`);
+      } catch (err) {
+        console.warn("Failed to clean up localStorage:", err);
+      }
+    }
+  }, [initialStatus?.status, progress, analysisId]);
 
   const getStepStatus = (
     stepId: string
   ): "pending" | "running" | "completed" | "error" => {
     // If we have live events that indicate completion, use them
-    const stepEvents = events.filter((e) => e.step === stepId);
+    const stepEvents = localEvents.filter((e) => e.step === stepId);
     if (stepEvents.some((e) => e.type === "error")) return "error";
     if (stepEvents.some((e) => e.type === "complete")) return "completed";
 
@@ -57,9 +102,9 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
   };
 
   const latestMessage = useMemo(() => {
-    if (events.length === 0) return "Starting analysis pipeline...";
-    return events[events.length - 1].message;
-  }, [events]);
+    if (localEvents.length === 0) return "Starting analysis pipeline...";
+    return localEvents[localEvents.length - 1].message;
+  }, [localEvents]);
 
   const renderStepData = (eventMessage: string | undefined, eventData: any) => {
     if (!eventData || !eventMessage) return null;
@@ -180,7 +225,7 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
       <div className="space-y-4 pt-4">
         {pipelineSteps.map((step) => {
           const status = getStepStatus(step.id);
-          const hasEventData = events.some((e) => e.step === step.name && e.data);
+          const hasEventData = localEvents.some((e) => e.step === step.name && e.data);
 
           return (
             <div
@@ -250,7 +295,7 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
                 <div className="px-4 pb-4 border-t border-emerald-500/10 pt-4">
                   <div className="bg-zinc-950/50 rounded-xl p-5 border border-zinc-800/50">
                     {(() => {
-                      const eventWithData = events.find(
+                      const eventWithData = localEvents.find(
                         (e) => e.step === step.name && e.data
                       );
                       return renderStepData(
