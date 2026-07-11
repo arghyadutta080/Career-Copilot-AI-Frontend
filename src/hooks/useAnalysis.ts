@@ -10,11 +10,6 @@ import {
   GET_ANALYSIS_INTERVIEW_PREP,
   GET_ANALYSIS_LEARNING_ROADMAP,
   GET_ANALYSIS_STATUS,
-  CREATE_ANALYSIS,
-  START_ANALYSIS,
-  GENERATE_INTERVIEW_QUESTIONS,
-  GENERATE_LEARNING_ROADMAP,
-  GENERATE_INTERVIEW_ANSWER,
 } from "@/lib/queries/analysis";
 import type { Analysis, JobDescription, DashboardOverviewItem } from "@/types";
 
@@ -180,11 +175,11 @@ export function useCreateAnalysis() {
       resumeId: string;
       jobDescriptionId: string;
     }) => {
-      const client = getGraphQLClient();
-      const data = await client.request<{
-        createAnalysis: { id: string; status: string };
-      }>(CREATE_ANALYSIS, { resumeId, jobDescriptionId });
-      return data.createAnalysis;
+      const data = await apiFetch<{ id: string; status: string }>("/api/analyses", {
+        method: "POST",
+        body: JSON.stringify({ resumeId, jobDescriptionId }),
+      });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["job-analyses"] });
@@ -195,8 +190,9 @@ export function useCreateAnalysis() {
 export function useStartAnalysis() {
   return useMutation({
     mutationFn: async (analysisId: string) => {
-      const client = getGraphQLClient();
-      await client.request(START_ANALYSIS, { analysisId });
+      await apiFetch(`/api/analyses/${analysisId}/start`, {
+        method: "POST",
+      });
     },
   });
 }
@@ -206,8 +202,9 @@ export function useGenerateInterview() {
 
   return useMutation({
     mutationFn: async (analysisId: string) => {
-      const client = getGraphQLClient();
-      await client.request(GENERATE_INTERVIEW_QUESTIONS, { analysisId });
+      await apiFetch(`/api/analyses/${analysisId}/interview`, {
+        method: "POST",
+      });
     },
     onSuccess: (_data, analysisId) => {
       queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
@@ -221,8 +218,9 @@ export function useGenerateRoadmap() {
 
   return useMutation({
     mutationFn: async (analysisId: string) => {
-      const client = getGraphQLClient();
-      await client.request(GENERATE_LEARNING_ROADMAP, { analysisId });
+      await apiFetch(`/api/analyses/${analysisId}/roadmap`, {
+        method: "POST",
+      });
     },
     onSuccess: (_data, analysisId) => {
       queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
@@ -234,8 +232,9 @@ export function useGenerateRoadmap() {
 export function useGenerateInterviewAnswer() {
   return useMutation({
     mutationFn: async ({ analysisId, questionId }: { analysisId: string; questionId: string }) => {
-      const client = getGraphQLClient();
-      await client.request(GENERATE_INTERVIEW_ANSWER, { analysisId, questionId });
+      await apiFetch(`/api/analyses/${analysisId}/questions/${questionId}/answer`, {
+        method: "POST",
+      });
     },
   });
 }

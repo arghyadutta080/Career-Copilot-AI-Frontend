@@ -270,38 +270,3 @@ export const GET_ANALYSIS_STATUS = gql`
     }
   }
 `;
-
-// ─── Mutations ──────────────────────────────────────────────────────────────
-
-export const CREATE_ANALYSIS = gql`
-  mutation CreateAnalysis($resumeId: ID!, $jobDescriptionId: ID!) {
-    createAnalysis(resumeId: $resumeId, jobDescriptionId: $jobDescriptionId) {
-      id
-      status
-    }
-  }
-`;
-
-export const START_ANALYSIS = gql`
-  mutation StartAnalysis($analysisId: ID!) {
-    startAnalysis(analysisId: $analysisId)
-  }
-`;
-
-export const GENERATE_INTERVIEW_QUESTIONS = gql`
-  mutation GenerateInterviewQuestions($analysisId: ID!) {
-    generateInterviewQuestions(analysisId: $analysisId)
-  }
-`;
-
-export const GENERATE_LEARNING_ROADMAP = gql`
-  mutation GenerateLearningRoadmap($analysisId: ID!) {
-    generateLearningRoadmap(analysisId: $analysisId)
-  }
-`;
-
-export const GENERATE_INTERVIEW_ANSWER = gql`
-  mutation GenerateInterviewAnswer($analysisId: ID!, $questionId: ID!) {
-    generateInterviewAnswer(analysisId: $analysisId, questionId: $questionId)
-  }
-`;
