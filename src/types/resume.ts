@@ -9,6 +9,7 @@ export interface ResumeExperience {
   company?: string;
   role?: string;
   duration?: string;
+  responsibilities?: string[];
 }
 
 export interface ResumeEducation {
@@ -24,6 +25,8 @@ export interface ParsedResume {
   projects?: ResumeProject[];
   experience?: ResumeExperience[];
   education?: ResumeEducation[];
+  certifications?: string[];
+  achievements?: string[];
 }
 
 export interface Resume {

@@ -1,5 +1,5 @@
 import { ParsedResume } from "@/types/resume";
-import { Briefcase, GraduationCap, Code, FolderGit2, Mail, Phone, User } from "lucide-react";
+import { Briefcase, GraduationCap, Code, FolderGit2, Mail, Phone, User, Trophy, Award } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 
 interface ParsedResumeViewProps {
@@ -64,12 +64,19 @@ export function ParsedResumeView({ data }: ParsedResumeViewProps) {
           </div>
           <div className="space-y-6">
             {data.experience.map((exp, index) => (
-              <div key={index} className="space-y-1 relative pl-4 before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-zinc-800">
+              <div key={index} className="space-y-2 relative pl-4 before:absolute before:inset-y-0 before:left-0 before:w-[2px] before:bg-zinc-800">
                 <div className="flex justify-between items-start">
                   <h4 className="font-medium text-white">{exp.role}</h4>
                   <span className="text-xs text-zinc-500 whitespace-nowrap bg-zinc-900 px-2 py-1 rounded-md">{exp.duration}</span>
                 </div>
                 <p className="text-sm font-medium text-violet-400">{exp.company}</p>
+                {exp.responsibilities && exp.responsibilities.length > 0 && (
+                  <ul className="list-disc pl-5 text-sm text-zinc-400 mt-2 space-y-1">
+                    {exp.responsibilities.map((resp, i) => (
+                      <li key={i}>{resp}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
           </div>
@@ -115,6 +122,36 @@ export function ParsedResumeView({ data }: ParsedResumeViewProps) {
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* Achievements */}
+      {data.achievements && data.achievements.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-white border-b border-zinc-800 pb-2">
+            <Trophy className="h-5 w-5 text-amber-400" />
+            <h3 className="text-lg font-semibold">Achievements</h3>
+          </div>
+          <ul className="list-disc pl-5 text-sm text-zinc-400 space-y-1">
+            {data.achievements.map((ach, index) => (
+              <li key={index}>{ach}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Certifications */}
+      {data.certifications && data.certifications.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-white border-b border-zinc-800 pb-2">
+            <Award className="h-5 w-5 text-teal-400" />
+            <h3 className="text-lg font-semibold">Certifications</h3>
+          </div>
+          <ul className="list-disc pl-5 text-sm text-zinc-400 space-y-1">
+            {data.certifications.map((cert, index) => (
+              <li key={index}>{cert}</li>
+            ))}
+          </ul>
         </section>
       )}
     </div>
