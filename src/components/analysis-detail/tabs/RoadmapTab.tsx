@@ -110,12 +110,12 @@ const RoadmapDisplay = memo(function RoadmapDisplay({ roadmap }: { roadmap: Lear
                 <div className="space-y-3">
                   {milestone.steps.map((step: RoadmapStep, j: number) => (
                     <div key={j} className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+                        <div className="flex-1 min-w-0">
                           <h5 className="font-semibold text-zinc-200">{step.title}</h5>
                           <p className="text-sm text-zinc-400 mt-1">{step.description}</p>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-400">
+                        <div className="flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 w-fit">
                           <Clock className="h-3.5 w-3.5" />
                           {step.estimatedHours}h
                         </div>

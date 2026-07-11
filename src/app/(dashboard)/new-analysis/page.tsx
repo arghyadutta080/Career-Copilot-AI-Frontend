@@ -89,7 +89,7 @@ export default function NewAnalysisPage() {
               <div
                 key={step.id}
                 className={cn(
-                  "flex flex-col items-center gap-3 w-32",
+                  "flex flex-col items-center gap-2 w-24 sm:w-32",
                   isCompleted || isCurrent ? "text-violet-400" : "text-zinc-500"
                 )}
               >
@@ -107,7 +107,7 @@ export default function NewAnalysisPage() {
                 </div>
                 <span
                   className={cn(
-                    "text-sm font-medium transition-colors duration-300 text-center",
+                    "text-xs sm:text-sm font-medium transition-colors duration-300 text-center",
                     isCurrent ? "text-white" : isCompleted ? "text-zinc-300" : "text-zinc-500"
                   )}
                 >

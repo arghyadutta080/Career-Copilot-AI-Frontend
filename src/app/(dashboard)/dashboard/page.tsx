@@ -75,7 +75,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">
             Welcome back, {user?.name?.split(" ")[0] || "there"}! 👋
@@ -86,7 +86,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/new-analysis"
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-violet-500 shadow-lg shadow-violet-600/20"
+          className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-violet-500 shadow-lg shadow-violet-600/20"
         >
           <Plus className="h-4 w-4" />
           New Analysis

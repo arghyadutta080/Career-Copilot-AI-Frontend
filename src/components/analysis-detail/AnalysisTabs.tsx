@@ -39,7 +39,7 @@ export function AnalysisTabs({ analysis }: AnalysisTabsProps) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-1.5 sm:p-2 overflow-hidden w-full max-w-full">
         <Tabs
           tabs={tabItems}
           activeTab={activeTab}

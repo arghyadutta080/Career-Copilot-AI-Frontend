@@ -40,11 +40,11 @@ export function ResumeOptimizerTab({ analysisId }: ResumeOptimizerTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h3 className="text-xl font-bold text-white">Optimized Resume</h3>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-all duration-200 active:scale-95 shadow-md shadow-violet-600/10"
+          className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-all duration-200 active:scale-95 shadow-md shadow-violet-600/10 w-full sm:w-auto"
         >
           {copied ? (
             <>

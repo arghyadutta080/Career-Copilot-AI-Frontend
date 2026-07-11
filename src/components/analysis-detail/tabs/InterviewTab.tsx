@@ -278,7 +278,7 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-1.5 sm:p-2 overflow-hidden w-full max-w-full">
         <Tabs
           tabs={categories.map((c) => ({
             id: c.id,
@@ -306,7 +306,7 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400 text-sm font-semibold border border-violet-500/20">
                       P{i + 1}
                     </span>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <h4 className="text-base font-semibold text-zinc-200">{group.parentQuestion}</h4>
                       <p className="text-xs text-violet-400 font-medium mt-1">
                         {group.followUps?.length || 0} Follow-up Question{(group.followUps?.length || 0) !== 1 ? 's' : ''}
@@ -345,15 +345,15 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
                             <div key={q.id || j} className="border border-zinc-800/80 rounded-xl bg-zinc-950/60 overflow-hidden">
                               <button
                                 onClick={() => setExpandedFollowUpId(isFollowUpExpanded ? null : q.id)}
-                                className="w-full flex items-center justify-between p-4 text-left hover:bg-zinc-800/20 transition-colors"
+                                className="w-full flex items-start justify-between p-4 text-left hover:bg-zinc-800/20 transition-colors"
                               >
-                                <div className="flex items-center gap-3">
-                                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-xs font-bold text-zinc-400">
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-xs font-bold text-zinc-400 mt-0.5">
                                     F{j + 1}
                                   </span>
-                                  <div>
+                                  <div className="flex-1 min-w-0">
                                     <h5 className="text-sm font-medium text-zinc-200">{q.question}</h5>
-                                    <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex flex-wrap items-center gap-2 mt-1">
                                       {q.difficulty && (
                                         <span className="text-[10px] font-medium text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">
                                           {q.difficulty}
@@ -368,9 +368,9 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
                                   </div>
                                 </div>
                                 {isFollowUpExpanded ? (
-                                  <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0" />
+                                  <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0 mt-1" />
                                 ) : (
-                                  <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
+                                  <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0 mt-1" />
                                 )}
                               </button>
                               {isFollowUpExpanded && (
@@ -406,7 +406,7 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-sm font-semibold text-zinc-400">
                       Q{i + 1}
                     </span>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <h4 className="text-base font-medium text-zinc-200">{q.question}</h4>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {q.difficulty && (

@@ -35,11 +35,11 @@ export function CoverLetterTab({ analysisId }: CoverLetterTabProps) {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h3 className="text-xl font-bold text-white">Custom Cover Letter</h3>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors"
+          className="flex items-center justify-center gap-2 rounded-xl bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors cursor-pointer w-full sm:w-auto"
         >
           {copied ? (
             <>
@@ -55,7 +55,7 @@ export function CoverLetterTab({ analysisId }: CoverLetterTabProps) {
         </button>
       </div>
 
-      <Card className="bg-zinc-950 p-8">
+      <Card className="bg-zinc-950 p-4 sm:p-6 lg:p-8">
         <div className="mb-8 border-b border-zinc-800 pb-4">
           <p className="text-sm text-zinc-500 font-medium">Subject:</p>
           <p className="text-base font-semibold text-white mt-1">
