@@ -106,6 +106,26 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
     return localEvents[localEvents.length - 1].message;
   }, [localEvents]);
 
+  // Find the last completed step that has event data to display
+  const lastCompletedStepWithData = useMemo(() => {
+    for (let i = pipelineSteps.length - 1; i >= 0; i--) {
+      const step = pipelineSteps[i];
+      const status = getStepStatus(step.id);
+      const hasEventData = localEvents.some((e) => e.step === step.name && e.data);
+      if (status === "completed" && hasEventData) {
+        return step.id;
+      }
+    }
+    return null;
+  }, [localEvents, initialStatus]);
+
+  // Auto-expand the last completed step when it changes
+  useEffect(() => {
+    if (lastCompletedStepWithData) {
+      setExpandedStep(lastCompletedStepWithData);
+    }
+  }, [lastCompletedStepWithData]);
+
   const renderStepData = (eventMessage: string | undefined, eventData: any) => {
     if (!eventData || !eventMessage) return null;
 
@@ -205,7 +225,7 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
         <div className="flex gap-2.5 items-start p-3.5 rounded-xl border border-zinc-800 bg-zinc-900/20 text-zinc-400 text-xs">
           <AlertCircle className="h-4 w-4 text-violet-400 shrink-0 mt-0.5" />
           <p className="leading-relaxed text-left">
-            If you leave this screen, these live progress logs will be cleared. However, your analysis will continue running in the background and will be fully previewable in your dashboard once completed.
+            If you leave this screen, these live progress logs might be cleared. However, your analysis will continue running in the background and will be fully previewable in your dashboard once completed.
           </p>
         </div>
       )}
@@ -235,7 +255,7 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
                 status === "completed"
                   ? "border-emerald-500/20 bg-emerald-500/5"
                   : status === "running"
-                  ? "border-violet-500/30 bg-violet-500/10 shadow-[0_0_15px_rgba(139,92,246,0.1)]"
+                  ? "border-violet-500/30 bg-violet-500/10 shadow-[0_0_15px_rgba(37,99,235,0.1)]"
                   : status === "error"
                   ? "border-red-500/20 bg-red-500/5"
                   : "border-zinc-800 bg-zinc-900/40"

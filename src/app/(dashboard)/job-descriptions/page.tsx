@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Briefcase, Search, Plus, Trash2 } from "lucide-react";
+import { Briefcase, Search, Plus, Trash2, Eye } from "lucide-react";
 import { useJobDescriptions } from "@/hooks/useAnalysis";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -9,12 +9,14 @@ import { ListItemSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { JobDescriptionModal } from "@/components/ui/JobDescriptionModal";
 
 export default function JobDescriptionsPage() {
   const { data: jobs, isLoading, refetch } = useJobDescriptions();
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [selectedJobPreview, setSelectedJobPreview] = useState<any | null>(null);
 
   const handleDelete = async () => {
     if (!confirmDeleteId) return;
@@ -77,11 +79,18 @@ export default function JobDescriptionsPage() {
         ) : filteredJobs && filteredJobs.length > 0 ? (
           filteredJobs.map((job) => (
             <Card key={job._id} className="flex flex-col h-48 group relative overflow-hidden">
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 bg-zinc-950/80 p-1 rounded-lg border border-zinc-800/85 backdrop-blur-xs">
+                <button
+                  onClick={() => setSelectedJobPreview(job)}
+                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors cursor-pointer"
+                  title="Preview Job Description"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
                 <button
                   onClick={() => setConfirmDeleteId(job._id)}
                   disabled={deletingId === job._id}
-                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer"
                   title="Delete Job Description"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -137,6 +146,13 @@ export default function JobDescriptionsPage() {
         title="Delete Job Description?"
         message="Are you sure you want to delete this job description? Deleting it will also permanently delete all associated analyses. This action cannot be undone."
         isLoading={deletingId !== null}
+      />
+
+      {/* Preview Modal */}
+      <JobDescriptionModal
+        isOpen={!!selectedJobPreview}
+        onClose={() => setSelectedJobPreview(null)}
+        job={selectedJobPreview}
       />
     </div>
   );

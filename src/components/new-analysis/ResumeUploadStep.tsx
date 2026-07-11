@@ -167,7 +167,7 @@ export function ResumeUploadStep({
                     className={cn(
                       "flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200",
                       isSelected
-                        ? "border-violet-500 bg-violet-500/10 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
+                        ? "border-violet-500 bg-violet-500/10 shadow-[0_0_15px_rgba(37,99,235,0.15)]"
                         : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/80"
                     )}
                   >
@@ -223,7 +223,7 @@ export function ResumeUploadStep({
 
       {/* Selected Resume Details */}
       {selectedResume && (
-        <div className="flex items-center gap-4 p-4 rounded-xl border border-violet-500/50 bg-violet-500/10 shadow-[0_0_15px_rgba(139,92,246,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="flex items-center gap-4 p-4 rounded-xl border border-violet-500/50 bg-violet-500/10 shadow-[0_0_15px_rgba(37,99,235,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400">
             <FileText className="h-5 w-5" />
           </div>

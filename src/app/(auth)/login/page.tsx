@@ -309,7 +309,7 @@ export default function LoginPage() {
               <div
                 key={feat.id}
                 onClick={() => setSelectedFeature(feat)}
-                className="group p-6 rounded-2xl border border-zinc-900 bg-zinc-900/25 hover:border-violet-500/30 hover:bg-zinc-900/40 cursor-pointer transition-all duration-300 flex flex-col justify-between hover:shadow-[0_0_20px_rgba(139,92,246,0.05)] relative overflow-hidden"
+                className="group p-6 rounded-2xl border border-zinc-900 bg-zinc-900/25 hover:border-violet-500/30 hover:bg-zinc-900/40 cursor-pointer transition-all duration-300 flex flex-col justify-between hover:shadow-[0_0_20px_rgba(37,99,235,0.05)] relative overflow-hidden"
               >
                 {/* Glow hint */}
                 <div className="absolute top-0 right-0 w-16 h-16 bg-violet-600/5 rounded-full blur-xl group-hover:bg-violet-600/10 transition-colors pointer-events-none" />

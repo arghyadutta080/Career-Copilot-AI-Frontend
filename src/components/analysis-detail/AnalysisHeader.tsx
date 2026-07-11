@@ -1,21 +1,17 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Briefcase, Download, ExternalLink, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { Analysis, JobDescription } from "@/types";
-
-// Note: Since we didn't fetch the full JobDescription object in GET_ANALYSIS, 
-// we will need to fetch it or pass it. For now, we assume it's available via a hook or prop.
-// Actually, GET_ANALYSIS in my queries didn't fetch job description details.
-// Let's modify the GET_ANALYSIS query later if needed, but for now we can fetch it here or use a hook.
-
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { JobDescriptionModal } from "@/components/ui/JobDescriptionModal";
 
 interface AnalysisHeaderProps {
   analysis: Analysis;
 }
 
 export const AnalysisHeader = memo(function AnalysisHeader({ analysis }: AnalysisHeaderProps) {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { data: job } = useQuery<JobDescription>({
     queryKey: ["job-description", analysis.jobDescriptionId],
     queryFn: () => apiFetch<JobDescription>(`/api/job-descriptions/${analysis.jobDescriptionId}`),
@@ -63,15 +59,21 @@ export const AnalysisHeader = memo(function AnalysisHeader({ analysis }: Analysi
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors">
+        <button
+          onClick={() => setIsPreviewOpen(true)}
+          className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors cursor-pointer"
+        >
           <ExternalLink className="h-4 w-4" />
           View Job
         </button>
-        {/* <button className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 transition-colors">
-          <Download className="h-4 w-4" />
-          Export PDF
-        </button> */}
       </div>
+
+      {/* Preview Modal */}
+      <JobDescriptionModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        job={job || null}
+      />
     </div>
   );
 });

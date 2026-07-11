@@ -12,6 +12,19 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+
+  /* Remap all violet variables to clean professional blue values */
+  --color-violet-50: var(--color-blue-50);
+  --color-violet-100: var(--color-blue-100);
+  --color-violet-200: var(--color-blue-200);
+  --color-violet-300: var(--color-blue-300);
+  --color-violet-400: var(--color-blue-400);
+  --color-violet-500: var(--color-blue-500);
+  --color-violet-600: var(--color-blue-600);
+  --color-violet-700: var(--color-blue-700);
+  --color-violet-800: var(--color-blue-800);
+  --color-violet-900: var(--color-blue-900);
+  --color-violet-950: var(--color-blue-950);
 }
 
 /* ─── Base Styles ────────────────────────────────────────────────────────── */

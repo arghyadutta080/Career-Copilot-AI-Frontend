@@ -99,7 +99,7 @@ export default function NewAnalysisPage() {
                     isCompleted
                       ? "border-violet-500 bg-violet-500/10"
                       : isCurrent
-                      ? "border-violet-500 bg-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.3)] text-white"
+                      ? "border-violet-500 bg-violet-500/20 shadow-[0_0_15px_rgba(37,99,235,0.3)] text-white"
                       : "border-zinc-800 text-zinc-500"
                   )}
                 >

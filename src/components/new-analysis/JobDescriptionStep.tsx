@@ -102,7 +102,7 @@ export function JobDescriptionStep({
                     className={cn(
                       "flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200",
                       isSelected
-                        ? "border-violet-500 bg-violet-500/10 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
+                        ? "border-violet-500 bg-violet-500/10 shadow-[0_0_15px_rgba(37,99,235,0.15)]"
                         : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/80"
                     )}
                   >
