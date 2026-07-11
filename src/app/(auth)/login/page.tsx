@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import type { AuthResponse } from "@/types";
+import { Logo } from "@/components/ui/Logo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -183,14 +184,7 @@ export default function LoginPage() {
       {/* Sticky Header Nav */}
       <header className="sticky top-0 z-40 w-full border-b border-zinc-900 bg-zinc-950/75 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-md shadow-violet-500/20">
-              <Sparkles className="h-4.5 w-4.5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-white tracking-tight">
-              Career Copilot AI
-            </span>
-          </div>
+          <Logo size="lg" />
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
             <button
@@ -404,12 +398,7 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="border-t border-zinc-900 bg-zinc-950 py-12 text-center text-xs text-zinc-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-zinc-900 border border-zinc-800">
-              <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-            </div>
-            <span className="font-bold text-white tracking-tight">Career Copilot AI</span>
-          </div>
+          <Logo size="md" />
 
           <div className="flex items-center gap-6">
             <span className="hover:text-zinc-400 transition-colors">Privacy Policy</span>

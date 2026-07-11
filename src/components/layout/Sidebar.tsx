@@ -9,12 +9,12 @@ import {
   FileText,
   Briefcase,
   Settings,
-  Sparkles,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api";
+import { Logo } from "@/components/ui/Logo";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,13 +42,8 @@ export const Sidebar = memo(function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-40 flex w-64 flex-col border-r border-zinc-800 bg-zinc-950">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-6 py-5 border-b border-zinc-800/60">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600">
-          <Sparkles className="h-4 w-4 text-white" />
-        </div>
-        <span className="text-base font-bold text-white tracking-tight">
-          Career Copilot AI
-        </span>
+      <div className="px-5 py-4 border-b border-zinc-800/60">
+        <Logo size="md" />
       </div>
 
       {/* Navigation */}
