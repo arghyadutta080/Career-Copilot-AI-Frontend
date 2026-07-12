@@ -60,7 +60,7 @@ const ResourceUrls = memo(function ResourceUrls({ resourceId }: { resourceId?: s
   // Skeleton buttons — same height/width as Watch Video pills to prevent layout shift.
   return (
     <div className="pl-6 flex flex-wrap gap-2">
-      {[0, 1].map((i) => (
+      {[0, 1, 2].map((i) => (
         <div key={i} className="h-[26px] w-[88px] rounded-lg bg-zinc-800/70 animate-pulse" />
       ))}
     </div>

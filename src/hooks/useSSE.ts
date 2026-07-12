@@ -76,9 +76,11 @@ export function useSSE(analysisId: string | undefined, enabled = true, resetOnCo
         // Auto-disconnect and fetch full data when pipeline is complete
           const isRoadmapEvent = event.step === "Learning Roadmap";
           const isYouTubeLoaded = event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
-          const isPipelineComplete = !isAnswerEvent && event.progress !== undefined && event.progress >= 100;
+          const isPipelineComplete = !isAnswerEvent && event.progress !== undefined && event.progress >= 100 && !isRoadmapEvent;
 
           if ((isRoadmapEvent && isYouTubeLoaded) || isPipelineComplete) {
+            // Disconnect cleanly only when YouTube enrichment finishes (for roadmap)
+            // or when other general pipelines reach progress >= 100
             queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
             
             // Close connection cleanly
