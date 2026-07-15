@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Plus, Search, SlidersHorizontal, Trash2, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
+import { useUsage } from "@/hooks/useAnalysis";
 import { RecentAnalysisCard } from "@/components/dashboard/RecentAnalysisCard";
 import { ListItemSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { UpgradeModal } from "@/components/ui/UpgradeModal";
 import type { Analysis, DashboardOverviewItem } from "@/types";
 
 interface AnalysisListItem {
@@ -43,6 +46,8 @@ async function fetchAllAnalyses(): Promise<AnalysisListItem[]> {
 type StatusFilter = "all" | "completed" | "running" | "pending" | "failed";
 
 export default function AnalysesPage() {
+  const { plan, setPlan } = useAuthStore();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<"recent" | "ats">("recent");
@@ -50,6 +55,16 @@ export default function AnalysesPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const { data: usage } = useUsage();
+
+  // Sync plan into global store in case user navigated directly to this page
+  // without visiting the dashboard first.
+  useEffect(() => {
+    if (usage?.plan) setPlan(usage.plan);
+  }, [usage?.plan]);
+
+  const isAtLimit = usage ? usage.remainingAnalysis === 0 : false;
 
   const { data: analyses, isLoading, refetch } = useQuery<AnalysisListItem[]>({
     queryKey: ["all-analyses"],
@@ -145,13 +160,26 @@ export default function AnalysesPage() {
             All your resume analyses in one place.
           </p>
         </div>
-        <Link
-          href="/new-analysis"
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors shadow-lg shadow-violet-600/20"
-        >
-          <Plus className="h-4 w-4" />
-          New Analysis
-        </Link>
+
+        {isAtLimit ? (
+          <button
+            id="analyses-new-analysis-limit-btn"
+            onClick={() => setShowUpgradeModal(true)}
+            className="flex items-center gap-2 rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-sm font-medium text-zinc-300 hover:border-violet-500/50 hover:text-white transition-all duration-200 shadow-lg"
+          >
+            <Zap className="h-4 w-4 text-violet-400" />
+            Upgrade to Create
+          </button>
+        ) : (
+          <Link
+            id="analyses-new-analysis-btn"
+            href="/new-analysis"
+            className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors shadow-lg shadow-violet-600/20"
+          >
+            <Plus className="h-4 w-4" />
+            New Analysis
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -258,13 +286,24 @@ export default function AnalysesPage() {
           icon={<SlidersHorizontal className="h-7 w-7" />}
           action={
             !search && statusFilter === "all" ? (
-              <Link
-                href="/new-analysis"
-                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                New Analysis
-              </Link>
+              isAtLimit ? (
+                <button
+                  id="analyses-empty-upgrade-btn"
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+                >
+                  <Zap className="h-4 w-4" />
+                  Upgrade Plan
+                </button>
+              ) : (
+                <Link
+                  href="/new-analysis"
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Analysis
+                </Link>
+              )
             ) : undefined
           }
         />
@@ -279,6 +318,11 @@ export default function AnalysesPage() {
         message={`Are you sure you want to permanently delete the ${selectedIds.length} selected analyses? This action cannot be undone.`}
         isLoading={deleting}
       />
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <UpgradeModal onClose={() => setShowUpgradeModal(false)} />
+      )}
     </div>
   );
 }

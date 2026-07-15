@@ -5,12 +5,17 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  /** Current plan — populated by useUsage hook after first fetch */
+  plan: "FREE" | "PRO" | "ENTERPRISE" | null;
 
   /** Set user + token after successful login */
   setAuth: (user: User, token: string) => void;
 
   /** Update user object (e.g. after profile edit) */
   setUser: (user: User) => void;
+
+  /** Update the plan (called by useUsage on data load) */
+  setPlan: (plan: "FREE" | "PRO" | "ENTERPRISE") => void;
 
   /** Clear auth state and remove persisted token */
   logout: () => void;
@@ -23,6 +28,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isAuthenticated: false,
+  plan: null,
 
   setAuth: (user, token) => {
     if (typeof window !== "undefined") {
@@ -35,11 +41,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user });
   },
 
+  setPlan: (plan) => {
+    set({ plan });
+  },
+
   logout: () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
     }
-    set({ user: null, token: null, isAuthenticated: false });
+    set({ user: null, token: null, isAuthenticated: false, plan: null });
   },
 
   hydrate: () => {

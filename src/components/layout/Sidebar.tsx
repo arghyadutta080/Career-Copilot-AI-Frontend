@@ -15,6 +15,7 @@ import { cn } from "@/lib/cn";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api";
 import { Logo } from "@/components/ui/Logo";
+import { PLAN_LABELS } from "@/lib/quotaPlan";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -27,7 +28,7 @@ const navItems = [
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, plan } = useAuthStore();
 
   const handleLogout = async () => {
     try {
@@ -91,7 +92,9 @@ export const Sidebar = memo(function Sidebar() {
               <p className="text-sm font-medium text-zinc-200 truncate">
                 {user.name}
               </p>
-              <p className="text-xs text-zinc-500 truncate">Free Plan</p>
+              <p className="text-xs text-zinc-500 truncate">
+                {plan ? PLAN_LABELS[plan] ?? plan : "Free Plan"}
+              </p>
             </div>
             <button
               onClick={handleLogout}

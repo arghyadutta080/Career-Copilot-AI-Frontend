@@ -31,6 +31,23 @@ export function useDashboardOverview() {
   });
 }
 
+// ─── Usage / quota hook ──────────────────────────────────────────────────────
+
+export interface UsageSummary {
+  plan: "FREE" | "PRO" | "ENTERPRISE";
+  analysisCreated: number;
+  analysisLimit: number;
+  remainingAnalysis: number;
+}
+
+export function useUsage() {
+  return useQuery<UsageSummary>({
+    queryKey: ["my-usage"],
+    queryFn: () => apiFetch<UsageSummary>("/api/analyses/usage"),
+    staleTime: 60 * 1000,
+  });
+}
+
 // ─── GraphQL-based hooks (detail views — full data) ─────────────────────────
 
 /** Base analysis fetch for detail page overview */
@@ -183,6 +200,8 @@ export function useCreateAnalysis() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["job-analyses"] });
+      // Refresh the usage badge on the dashboard
+      queryClient.invalidateQueries({ queryKey: ["my-usage"] });
     },
   });
 }
