@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://careercopilot.ai";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://career-copilot-ai-web.vercel.app";
 
   return [
     {

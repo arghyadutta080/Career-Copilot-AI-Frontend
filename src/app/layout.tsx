@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://careercopilot.ai"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://career-copilot-ai-web.vercel.app"),
   title: {
     default: "Career Copilot AI - AI-Powered Career Assistant",
     template: "%s | Career Copilot AI",
