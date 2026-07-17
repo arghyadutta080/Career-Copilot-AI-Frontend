@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Briefcase, ArrowRight, CheckCircle2, ChevronDown, FileText } from "lucide-react";
+import { Briefcase, ArrowRight, CheckCircle2, ChevronDown, FileText, Download } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useJobDescriptions } from "@/hooks/useAnalysis";
 import { apiFetch } from "@/lib/api";
@@ -28,6 +28,39 @@ export function JobDescriptionStep({
   });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleImport = async () => {
+    if (!importUrl) {
+      setImportError("Please enter a job URL.");
+      return;
+    }
+    setFormData({
+      title: "",
+      company: "",
+      description: "",
+    });
+    setImporting(true);
+    setImportError(null);
+    try {
+      const result = await apiFetch<any>("/api/job/import", {
+        method: "POST",
+        body: JSON.stringify({ url: importUrl }),
+      });
+      setFormData({
+        title: result.title || "",
+        company: result.company || "",
+        description: result.description || "",
+      });
+    } catch (err: any) {
+      setImportError(err.message || "Failed to import job description.");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!formData.title || !formData.company || !formData.description) {
@@ -152,6 +185,38 @@ export function JobDescriptionStep({
 
       {mode === "new" && (
         <div className="space-y-4">
+          {/* Import Section */}
+          <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-xl space-y-3">
+            <label className="text-sm text-zinc-400 font-medium ml-1">
+              Import from URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                placeholder="https://..."
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors"
+                onKeyDown={(e) => e.key === "Enter" && handleImport()}
+              />
+              <button
+                onClick={handleImport}
+                disabled={importing || !importUrl}
+                className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {importing ? "Importing..." : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Import
+                  </>
+                )}
+              </button>
+            </div>
+            {importError && (
+              <p className="text-xs text-red-400 mt-2">{importError}</p>
+            )}
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm text-zinc-400 font-medium ml-1">
@@ -225,7 +290,7 @@ export function JobDescriptionStep({
         ) : (
           <button
             onClick={handleCreate}
-            disabled={creating}
+            disabled={creating || !formData.title.trim() || !formData.company.trim() || !formData.description.trim()}
             className="flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-violet-600/20"
           >
             {creating ? "Saving..." : "Save & Continue"}
