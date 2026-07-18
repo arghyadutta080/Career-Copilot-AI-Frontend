@@ -219,7 +219,7 @@ function AnswerSection({ q, analysisId, disabledReason }: AnswerSectionProps) {
 
 // ─── InterviewTab ─────────────────────────────────────────────────────────────
 export function InterviewTab({ analysisId, status }: InterviewTabProps) {
-  const { data: analysis, isLoading } = useAnalysisInterview(analysisId);
+  const { data: analysis, isLoading, isFetching } = useAnalysisInterview(analysisId);
   const { mutate: generateInterview, isPending } = useGenerateInterview();
   const queryClient = useQueryClient();
   const { events } = useAnalysisProgressStore();
@@ -271,8 +271,8 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
     generateInterview(analysisId);
   };
 
-  // 1. If initially loading data from server, show skeleton
-  if (isLoading && !interview?.resumeBased?.length) {
+  // 1. If initially loading data from server or refetching after generation complete
+  if ((isLoading || isFetching) && !interview?.resumeBased?.length) {
     return <TabContentSkeleton />;
   }
 
