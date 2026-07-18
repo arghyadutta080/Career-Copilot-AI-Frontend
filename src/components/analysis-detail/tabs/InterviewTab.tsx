@@ -12,6 +12,50 @@ import type { InterviewQuestion, InterviewFollowUp, InterviewAnswer } from "@/ty
 import { useEffect, useState } from "react";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 
+// ─── localStorage key helpers ─────────────────────────────────────────────────
+const interviewGeneratingKey = (analysisId: string) => `interview-generating-${analysisId}`;
+const interviewStartKey = (analysisId: string) => `interview-start-${analysisId}`;
+
+const readInterviewGenerating = (analysisId: string): boolean => {
+  try {
+    return localStorage.getItem(interviewGeneratingKey(analysisId)) === "true";
+  } catch {
+    return false;
+  }
+};
+
+const readInterviewStartTime = (analysisId: string): number | null => {
+  try {
+    const val = localStorage.getItem(interviewStartKey(analysisId));
+    return val ? parseInt(val, 10) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Notify AnalysisTabs (and any other listeners) that the generating state changed */
+const dispatchGeneratingChanged = (analysisId: string) =>
+  window.dispatchEvent(new CustomEvent("analysis-generating-changed", { detail: { analysisId } }));
+
+const writeInterviewGenerating = (analysisId: string, value: boolean) => {
+  try {
+    if (value) {
+      localStorage.setItem(interviewGeneratingKey(analysisId), "true");
+      // Only write a fresh start-time if one doesn't already exist
+      if (!localStorage.getItem(interviewStartKey(analysisId))) {
+        localStorage.setItem(interviewStartKey(analysisId), Date.now().toString());
+      }
+    } else {
+      localStorage.removeItem(interviewGeneratingKey(analysisId));
+      localStorage.removeItem(interviewStartKey(analysisId));
+    }
+  } catch {
+    // ignore
+  }
+  dispatchGeneratingChanged(analysisId);
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface InterviewTabProps {
   analysisId: string;
   status?: string;
@@ -32,6 +76,7 @@ export const getAnswerObj = (question: InterviewQuestion): InterviewAnswer => {
   };
 };
 
+// ─── AnswerSection ─────────────────────────────────────────────────────────────
 interface AnswerSectionProps {
   q: InterviewQuestion;
   analysisId: string;
@@ -73,6 +118,22 @@ function AnswerSection({ q, analysisId, disabledReason }: AnswerSectionProps) {
       }
     );
   };
+
+  // Invalidate queries when answer events arrive
+  useEffect(() => {
+    if (categoryEvents.length > 0) {
+      const latest = categoryEvents[categoryEvents.length - 1];
+      if (
+        latest &&
+        (latest.type === "answer_started" ||
+          latest.type === "answer_completed" ||
+          latest.type === "answer_error")
+      ) {
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
+        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
+      }
+    }
+  }, [categoryEvents.length, analysisId, queryClient]);
 
   if (disabledReason && !isCompleted) {
     return (
@@ -156,16 +217,25 @@ function AnswerSection({ q, analysisId, disabledReason }: AnswerSectionProps) {
   );
 }
 
+// ─── InterviewTab ─────────────────────────────────────────────────────────────
 export function InterviewTab({ analysisId, status }: InterviewTabProps) {
   const { data: analysis, isLoading } = useAnalysisInterview(analysisId);
   const { mutate: generateInterview, isPending } = useGenerateInterview();
   const queryClient = useQueryClient();
-  const { events, isGeneratingInterview, setIsGeneratingInterview } = useAnalysisProgressStore();
-  
+  const { events } = useAnalysisProgressStore();
+
   const interview = analysis?.results?.interview;
   const [activeCategory, setActiveCategory] = useState("resume");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedFollowUpId, setExpandedFollowUpId] = useState<string | null>(null);
+
+  // Per-analysis generation flag & start time — sourced from localStorage, not global store
+  const [isGeneratingInterview, setIsGeneratingInterview] = useState<boolean>(() =>
+    readInterviewGenerating(analysisId)
+  );
+  const [startTime, setStartTime] = useState<number | null>(() =>
+    readInterviewStartTime(analysisId)
+  );
 
   const findParentQuestionObj = (parentQuestionText: string): InterviewQuestion | null => {
     const cats = ["hr", "resumeBased", "experienceBased", "projectBased", "technical", "coding", "behavioral"];
@@ -179,38 +249,25 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
     return null;
   };
 
-
-
+  // Detect interview generation completion from SSE events
   useEffect(() => {
-    if (isGeneratingInterview) {
-      const isComplete = events.some(
-        (e) => e.step === "Interview Questions" && e.progress === 100
-      );
-      if (isComplete) {
-        setIsGeneratingInterview(false);
-        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
-        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
-      }
+    if (!isGeneratingInterview) return;
+    const isComplete = events.some(
+      (e) => e.step === "Interview Questions" && e.progress === 100
+    );
+    if (isComplete) {
+      setIsGeneratingInterview(false);
+      setStartTime(null);
+      writeInterviewGenerating(analysisId, false);
+      queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
+      queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
     }
-  }, [events, isGeneratingInterview, analysisId, queryClient, setIsGeneratingInterview]);
-
-  useEffect(() => {
-    if (events.length > 0) {
-      const latest = events[events.length - 1];
-      if (
-        latest &&
-        (latest.type === "answer_started" ||
-          latest.type === "answer_completed" ||
-          latest.type === "answer_error")
-      ) {
-        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
-        queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
-      }
-    }
-  }, [events, analysisId, queryClient]);
+  }, [events, isGeneratingInterview, analysisId, queryClient]);
 
   const handleGenerate = () => {
+    writeInterviewGenerating(analysisId, true);
     setIsGeneratingInterview(true);
+    setStartTime(readInterviewStartTime(analysisId));
     generateInterview(analysisId);
   };
 
@@ -221,7 +278,7 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
 
   // 2. If generating or waiting for mutation, show generating UI
   if (isGeneratingInterview || isPending) {
-    return <GeneratingUI type="interview" />;
+    return <GeneratingUI type="interview" startTime={startTime ?? undefined} />;
   }
 
   // 3. If data is not present, show the generation button

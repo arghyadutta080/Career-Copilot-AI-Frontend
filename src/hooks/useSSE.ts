@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { connectSSE } from "@/lib/sse";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
@@ -16,7 +16,14 @@ const activeConnections = new Map<string, SSEConnection>();
 
 /**
  * Hook to manage SSE connection for a running analysis.
- * multiplexes connection in background and writes all events to localStorage.
+ * Multiplexes connection in background and writes all events to localStorage.
+ *
+ * Per-analysis generation state is persisted in localStorage:
+ *   - `analysis-progress-events-${analysisId}` — main pipeline step events
+ *   - `interview-generating-${analysisId}`     — "true" while interview SSE runs
+ *   - `roadmap-generating-${analysisId}`       — "true" | "enriching" while roadmap SSE runs
+ *
+ * These keys are cleared here when the relevant completion event arrives.
  */
 export function useSSE(analysisId: string | undefined, enabled = true, resetOnConnect = false) {
   const queryClient = useQueryClient();
@@ -48,7 +55,7 @@ export function useSSE(analysisId: string | undefined, enabled = true, resetOnCo
             event.step !== "Interview Questions" &&
             event.step !== "Learning Roadmap";
 
-          // 1. Keep saving every new event data to localStorage ONLY for main pipeline progress events
+          // 1. Persist main pipeline progress events to localStorage for AnalysisProgress resilience
           if (isMainPipelineEvent) {
             try {
               const key = `analysis-progress-events-${analysisId}`;
@@ -57,33 +64,72 @@ export function useSSE(analysisId: string | undefined, enabled = true, resetOnCo
               eventsList.push(event);
               localStorage.setItem(key, JSON.stringify(eventsList));
             } catch (err) {
-              console.warn("[useSSE] Failed to save event to localStorage:", err);
+              console.warn("[useSSE] Failed to save pipeline event to localStorage:", err);
             }
           }
 
-          // 2. Dispatch event to all active hook listeners
+          // 2. Clear per-analysis interview/roadmap generation keys on completion
+          if (!isAnswerEvent) {
+            const isInterviewComplete =
+              event.step === "Interview Questions" && event.progress === 100;
+
+            const isRoadmapYouTubeDone =
+              event.step === "Learning Roadmap" &&
+              (event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated");
+
+            const isRoadmapPhase1Done =
+              event.step === "Learning Roadmap" && event.progress === 100;
+
+            if (isInterviewComplete) {
+              try {
+                localStorage.removeItem(`interview-generating-${analysisId}`);
+                localStorage.removeItem(`interview-start-${analysisId}`);
+                window.dispatchEvent(new CustomEvent("analysis-generating-changed", { detail: { analysisId } }));
+              } catch (err) {
+                console.warn("[useSSE] Failed to clear interview-generating key:", err);
+              }
+            }
+
+            if (isRoadmapPhase1Done && !isRoadmapYouTubeDone) {
+              // Transition roadmap key from "true" → "enriching"
+              try {
+                localStorage.setItem(`roadmap-generating-${analysisId}`, "enriching");
+                window.dispatchEvent(new CustomEvent("analysis-generating-changed", { detail: { analysisId } }));
+              } catch (err) {
+                console.warn("[useSSE] Failed to update roadmap-generating key:", err);
+              }
+            }
+
+            if (isRoadmapYouTubeDone) {
+              try {
+                localStorage.removeItem(`roadmap-generating-${analysisId}`);
+                localStorage.removeItem(`roadmap-start-${analysisId}`);
+                window.dispatchEvent(new CustomEvent("analysis-generating-changed", { detail: { analysisId } }));
+              } catch (err) {
+                console.warn("[useSSE] Failed to clear roadmap-generating key:", err);
+              }
+            }
+          }
+
+          // 3. Dispatch event to all active hook listeners
           const activeConn = activeConnections.get(analysisId);
           activeConn?.listeners.forEach((listener) => listener(event));
 
-          // 3. Process complete/error triggers
-
+          // 4. Invalidate query cache for status updates (skip noisy answer delta events)
           if (!isAnswerEvent) {
-          // Only pipeline events (progress/complete/error) can change toolStatus —
-          // no need to refetch GetAnalysisStatus on every answer token.
             queryClient.invalidateQueries({ queryKey: ["analysis-status", analysisId] });
           }
 
-        // Auto-disconnect and fetch full data when pipeline is complete
+          // 5. Auto-disconnect and refetch full data when pipeline is complete
           const isRoadmapEvent = event.step === "Learning Roadmap";
-          const isYouTubeLoaded = event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
-          const isPipelineComplete = !isAnswerEvent && event.progress !== undefined && event.progress >= 100 && !isRoadmapEvent;
+          const isYouTubeLoaded =
+            event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
+          const isPipelineComplete =
+            !isAnswerEvent && event.progress !== undefined && event.progress >= 100 && !isRoadmapEvent;
 
           if ((isRoadmapEvent && isYouTubeLoaded) || isPipelineComplete) {
-            // Disconnect cleanly only when YouTube enrichment finishes (for roadmap)
-            // or when other general pipelines reach progress >= 100
             queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
-            
-            // Close connection cleanly
+
             const activeConn = activeConnections.get(analysisId);
             if (activeConn) {
               activeConn.disconnectSSE();

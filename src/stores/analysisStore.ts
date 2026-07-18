@@ -23,18 +23,6 @@ interface AnalysisProgressState {
   /** Reset for a new analysis run */
   reset: () => void;
 
-  /** Track manual generation for individual tabs */
-  isGeneratingInterview: boolean;
-  setIsGeneratingInterview: (isGenerating: boolean) => void;
-  generationStartTimeInterview: number | null;
-  
-  isGeneratingRoadmap: boolean;
-  setIsGeneratingRoadmap: (isGenerating: boolean) => void;
-  generationStartTimeRoadmap: number | null;
-
-  isEnrichingRoadmap: boolean;
-  setIsEnrichingRoadmap: (isEnriching: boolean) => void;
-
   /** Whether an on-demand answer is currently being streamed */
   isGeneratingAnswer: boolean;
   setIsGeneratingAnswer: (value: boolean) => void;
@@ -75,21 +63,13 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
         const isRoadmapResourcesLoaded =
           event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
 
-        const newState: Partial<AnalysisProgressState> = {
+        return {
           events: [...state.events, event],
           currentStep: event.step || "",
           progress: event.progress ?? 0,
           isComplete: (event.progress !== undefined && event.progress >= 100) || isRoadmapResourcesLoaded,
           hasError: event.type === "error",
         };
-
-        if (event.type === "error") {
-          newState.isGeneratingInterview = false;
-          newState.isGeneratingRoadmap = false;
-          newState.isEnrichingRoadmap = false;
-        }
-
-        return newState;
       }),
 
     reset: () =>
@@ -99,30 +79,9 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
         progress: 0,
         isComplete: false,
         hasError: false,
-        isEnrichingRoadmap: false,
         isGeneratingAnswer: false,
         resourceUrlMap: {},
       }),
-
-    isGeneratingInterview: false,
-    generationStartTimeInterview: null,
-    setIsGeneratingInterview: (isGenerating) => 
-      set({ 
-        isGeneratingInterview: isGenerating,
-        generationStartTimeInterview: isGenerating ? Date.now() : null
-      }),
-
-    isGeneratingRoadmap: false,
-    generationStartTimeRoadmap: null,
-    setIsGeneratingRoadmap: (isGenerating) => 
-      set({ 
-        isGeneratingRoadmap: isGenerating,
-        generationStartTimeRoadmap: isGenerating ? Date.now() : null
-      }),
-
-    isEnrichingRoadmap: false,
-    setIsEnrichingRoadmap: (isEnriching) =>
-      set({ isEnrichingRoadmap: isEnriching }),
 
     isGeneratingAnswer: false,
     setIsGeneratingAnswer: (value) => set({ isGeneratingAnswer: value }),

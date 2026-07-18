@@ -10,6 +10,54 @@ import { useAnalysisProgressStore } from "@/stores/analysisStore";
 import type { LearningRoadmap, RoadmapMilestone, RoadmapStep, LearningResource } from "@/types";
 import { memo, useCallback, useEffect, useState } from "react";
 
+// ─── localStorage key helpers ─────────────────────────────────────────────────
+const roadmapGeneratingKey = (analysisId: string) => `roadmap-generating-${analysisId}`;
+const roadmapStartKey = (analysisId: string) => `roadmap-start-${analysisId}`;
+
+type RoadmapGeneratingState = "idle" | "generating" | "enriching";
+
+const readRoadmapGenerating = (analysisId: string): RoadmapGeneratingState => {
+  try {
+    const val = localStorage.getItem(roadmapGeneratingKey(analysisId));
+    if (val === "true") return "generating";
+    if (val === "enriching") return "enriching";
+    return "idle";
+  } catch {
+    return "idle";
+  }
+};
+
+const readRoadmapStartTime = (analysisId: string): number | null => {
+  try {
+    const val = localStorage.getItem(roadmapStartKey(analysisId));
+    return val ? parseInt(val, 10) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Notify AnalysisTabs (and any other listeners) that the generating state changed */
+const dispatchGeneratingChanged = (analysisId: string) =>
+  window.dispatchEvent(new CustomEvent("analysis-generating-changed", { detail: { analysisId } }));
+
+const writeRoadmapGenerating = (analysisId: string, state: RoadmapGeneratingState) => {
+  try {
+    if (state === "idle") {
+      localStorage.removeItem(roadmapGeneratingKey(analysisId));
+      localStorage.removeItem(roadmapStartKey(analysisId));
+    } else {
+      localStorage.setItem(roadmapGeneratingKey(analysisId), state === "generating" ? "true" : "enriching");
+      // Only write a fresh start-time when first starting (not when transitioning to enriching)
+      if (state === "generating" && !localStorage.getItem(roadmapStartKey(analysisId))) {
+        localStorage.setItem(roadmapStartKey(analysisId), Date.now().toString());
+      }
+    }
+  } catch {
+    // ignore
+  }
+  dispatchGeneratingChanged(analysisId);
+};
+
 // ─── Inline YouTube icon ───────────────────────────────────────────────────────
 const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -180,16 +228,20 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
   const { data: analysis, isLoading } = useAnalysisRoadmap(analysisId);
   const { mutate: generateRoadmap, isPending } = useGenerateRoadmap();
   const queryClient = useQueryClient();
-  const {
-    events,
-    isGeneratingRoadmap,
-    setIsGeneratingRoadmap,
-    isEnrichingRoadmap,
-    setIsEnrichingRoadmap,
-    setResourceUrlMap,
-  } = useAnalysisProgressStore();
+  const { events, setResourceUrlMap } = useAnalysisProgressStore();
 
   const [localRoadmap, setLocalRoadmap] = useState<LearningRoadmap | null>(null);
+
+  // Per-analysis generation state & start time — sourced from localStorage, not global store
+  const [roadmapGeneratingState, setRoadmapGeneratingState] = useState<RoadmapGeneratingState>(() =>
+    readRoadmapGenerating(analysisId)
+  );
+  const [startTime, setStartTime] = useState<number | null>(() =>
+    readRoadmapStartTime(analysisId)
+  );
+
+  const isGeneratingRoadmap = roadmapGeneratingState === "generating";
+  const isEnrichingRoadmap = roadmapGeneratingState === "enriching";
 
   // ── Query → local sync ───────────────────────────────────────────────────────
   // Only runs when we have no SSE-managed state in flight. On a page revisit
@@ -229,7 +281,6 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
   const isInterviewNotCompleted = interviewStatus !== "completed";
 
   // ── SSE event handler ────────────────────────────────────────────────────────
-  // Runs on every new SSE event. keyed on events.length for minimal re-runs.
   useEffect(() => {
     if (!isGeneratingRoadmap && !isEnrichingRoadmap) return;
 
@@ -239,17 +290,15 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
         (e) => e.step === "Learning Roadmap" && e.progress === 100,
       );
       if (initialEvent?.data) {
-        // Set localRoadmap once. It will NOT be set again (the query-sync effect
-        // guards on `localRoadmap` being null), so RoadmapDisplay never re-renders.
         setLocalRoadmap(initialEvent.data as LearningRoadmap);
-        setIsGeneratingRoadmap(false);
-        setIsEnrichingRoadmap(true);
+        // Transition to enriching phase
+        setRoadmapGeneratingState("enriching");
+        writeRoadmapGenerating(analysisId, "enriching");
       }
       return;
     }
 
     // Phase 2: YouTube enrichment done — push id→urls into the Zustand store.
-    // RoadmapDisplay is NOT touched. Only ResourceUrls leaf nodes re-render.
     if (isEnrichingRoadmap) {
       const enrichedEvent = events.find(
         (e) =>
@@ -258,7 +307,9 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
       );
       if (enrichedEvent?.data) {
         setResourceUrlMap(enrichedEvent.data as Record<string, string[]>);
-        setIsEnrichingRoadmap(false);
+        setRoadmapGeneratingState("idle");
+        setStartTime(null);
+        writeRoadmapGenerating(analysisId, "idle");
         queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "roadmap"] });
         queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
       }
@@ -268,10 +319,10 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
 
   const handleGenerate = () => {
     setLocalRoadmap(null);
-    setIsGeneratingRoadmap(true);
-    setIsEnrichingRoadmap(false);
+    setRoadmapGeneratingState("generating");
+    writeRoadmapGenerating(analysisId, "generating");
+    setStartTime(readRoadmapStartTime(analysisId));
     generateRoadmap(analysisId);
-    // resourceUrlMap is cleared inside reset() which useSSE calls on reconnect.
   };
 
   // 1. Initially loading data from server
@@ -281,7 +332,7 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
 
   // 2. Generating or waiting for mutation
   if (isGeneratingRoadmap || isPending) {
-    return <GeneratingUI type="roadmap" />;
+    return <GeneratingUI type="roadmap" startTime={startTime ?? undefined} />;
   }
 
   // 3. No data yet — show generation CTA

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout, Target, Zap, FileEdit, FileText, MessageSquare, Map } from "lucide-react";
 import { useSSE } from "@/hooks/useSSE";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
@@ -28,13 +28,47 @@ const tabItems = [
   { id: "roadmap", label: "Learning Roadmap", icon: <Map className="h-4 w-4" /> },
 ];
 
+/** Read whether this specific analysis has any interview/roadmap generation in flight */
+function readIsGenerating(analysisId: string): boolean {
+  try {
+    return (
+      localStorage.getItem(`interview-generating-${analysisId}`) === "true" ||
+      !!localStorage.getItem(`roadmap-generating-${analysisId}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function AnalysisTabs({ analysis }: AnalysisTabsProps) {
   const [activeTab, setActiveTab] = useState("overview");
-  const { isGeneratingInterview, isGeneratingRoadmap, isEnrichingRoadmap, isGeneratingAnswer } = useAnalysisProgressStore();
+  const { isGeneratingAnswer } = useAnalysisProgressStore();
+
+  // Derived from per-analysis localStorage keys — not from a global store flag.
+  // Re-evaluated whenever the component re-renders (which happens on every SSE
+  // event because the store's `events` array updates → parent re-renders).
+  const [isPipelineRunning, setIsPipelineRunning] = useState(() => readIsGenerating(analysis.id));
+
+  // Sync isPipelineRunning:
+  //  - on analysis change (navigation to another analysis)
+  //  - when a tab dispatches `analysis-generating-changed` (generation started/stopped)
+  useEffect(() => {
+    const sync = () => setIsPipelineRunning(readIsGenerating(analysis.id));
+
+    // Sync immediately for this analysis
+    sync();
+
+    // Also react to events dispatched from InterviewTab / RoadmapTab
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ analysisId: string }>).detail;
+      if (detail.analysisId === analysis.id) sync();
+    };
+    window.addEventListener("analysis-generating-changed", handler);
+    return () => window.removeEventListener("analysis-generating-changed", handler);
+  }, [analysis.id]);
 
   // Keep SSE connection alive across tab switches if generation or enrichment is ongoing.
   // resetOnConnect=true only for pipeline runs, not for on-demand answer generation.
-  const isPipelineRunning = isGeneratingInterview || isGeneratingRoadmap || isEnrichingRoadmap;
   useSSE(analysis.id, isPipelineRunning || isGeneratingAnswer, isPipelineRunning);
 
   return (

@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { Card } from "./Card";
 import { ProgressBar } from "./ProgressBar";
-import { useAnalysisProgressStore } from "@/stores/analysisStore";
 
 interface GeneratingUIProps {
   type: "interview" | "roadmap";
+  /** Unix ms timestamp when generation was first started. Persisted in localStorage so
+   * the progress bar continues smoothly across tab switches instead of resetting. */
+  startTime?: number;
 }
 
-export function GeneratingUI({ type }: GeneratingUIProps) {
-  const { generationStartTimeInterview, generationStartTimeRoadmap } = useAnalysisProgressStore();
-  const startTime = type === "interview" ? generationStartTimeInterview : generationStartTimeRoadmap;
-
-  const [now, setNow] = useState(Date.now());
+export function GeneratingUI({ type, startTime }: GeneratingUIProps) {
+  // If a persisted startTime is provided use it; otherwise start the clock from now.
+  const baseTimeRef = useRef(startTime ?? Date.now());
+  const [elapsed, setElapsed] = useState(() => Date.now() - baseTimeRef.current);
 
   const messages =
     type === "interview"
@@ -32,18 +33,19 @@ export function GeneratingUI({ type }: GeneratingUIProps) {
         ];
 
   useEffect(() => {
+    // Keep baseTimeRef in sync if startTime prop changes after mount (e.g. after initial render)
+    if (startTime !== undefined) {
+      baseTimeRef.current = startTime;
+    }
     const interval = setInterval(() => {
-      setNow(Date.now());
+      setElapsed(Date.now() - baseTimeRef.current);
     }, 200);
-
     return () => clearInterval(interval);
-  }, []);
+  }, [startTime]);
 
-  const elapsed = startTime ? now - startTime : 0;
-  
   // Progress increments by 1 every 200ms up to 95%
   const dummyProgress = Math.min(95, Math.floor(elapsed / 200));
-  
+
   // Messages cycle every 3000ms
   const messageIndex = Math.floor(elapsed / 3000) % messages.length;
 
