@@ -39,10 +39,10 @@ graph TD
     Zustand[(Zustand Auth Store)]
     LStore[(Browser LocalStorage)]
     
-    subgraph UI Components
+    subgraph UIComponents [UI Components]
         Dashboard[Dashboard]
         NewAnalysis[New Analysis Form]
-        subgraph AnalysisDetail[Analysis Detail View]
+        subgraph AnalysisDetail [Analysis Detail View]
             Tabs[Navigation Tabs]
             ATab[ATS / Optimizer]
             ITab[Interview Tab]
@@ -51,18 +51,18 @@ graph TD
         end
     end
 
-    subgraph Hooks Layer
+    subgraph HooksLayer [Hooks Layer]
         useAuth[useAuth]
         useQuery[TanStack React Query]
         useSSE[useSSE Hook]
     end
 
-    subgraph Backend APIs
+    subgraph BackendAPIs [Backend APIs]
         GraphQL[GraphQL Endpoint]
         REST[REST / SSE Endpoints]
     end
 
-    Client --> UI Components
+    Client --> UIComponents
     Zustand <--> useAuth
     Dashboard & NewAnalysis & AnalysisDetail <--> useQuery
     AnalysisDetail <--> useSSE
