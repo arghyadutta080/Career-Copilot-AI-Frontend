@@ -1,4 +1,5 @@
 import type { JobDescription } from "./job-description";
+import { EVENT_TYPES } from "@/constants/events";
 
 // ─── Analysis Types ──────────────────────────────────────────────────────────
 
@@ -171,7 +172,7 @@ export interface Analysis {
 // ─── SSE Events ──────────────────────────────────────────────────────────────
 
 export interface SSEProgressEvent {
-  type: "progress" | "complete" | "error" | "roadmap_resources_updated" | "answer_started" | "answer_delta" | "answer_completed" | "answer_error";
+  type: typeof EVENT_TYPES[keyof typeof EVENT_TYPES];
   step?: string;
   message?: string;
   progress?: number;

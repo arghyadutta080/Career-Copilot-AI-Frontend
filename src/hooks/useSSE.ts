@@ -4,6 +4,7 @@ import { useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { connectSSE } from "@/lib/sse";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
+import { EVENT_TYPES, EVENT_STEPS, EVENT_MESSAGES } from "@/constants/events";
 import type { SSEProgressEvent } from "@/types";
 
 interface SSEConnection {
@@ -45,15 +46,15 @@ export function useSSE(analysisId: string | undefined, enabled = true, resetOnCo
         analysisId,
         (event: SSEProgressEvent) => {
           const isAnswerEvent =
-            event.type === "answer_started" ||
-            event.type === "answer_delta" ||
-            event.type === "answer_completed" ||
-            event.type === "answer_error";
+            event.type === EVENT_TYPES.ANSWER_STARTED ||
+            event.type === EVENT_TYPES.ANSWER_DELTA ||
+            event.type === EVENT_TYPES.ANSWER_COMPLETED ||
+            event.type === EVENT_TYPES.ANSWER_ERROR;
 
           const isMainPipelineEvent =
             !isAnswerEvent &&
-            event.step !== "Interview Questions" &&
-            event.step !== "Learning Roadmap";
+            event.step !== EVENT_STEPS.INTERVIEW_QUESTIONS &&
+            event.step !== EVENT_STEPS.LEARNING_ROADMAP;
 
           // 1. Persist main pipeline progress events to localStorage for AnalysisProgress resilience
           if (isMainPipelineEvent) {
@@ -71,14 +72,14 @@ export function useSSE(analysisId: string | undefined, enabled = true, resetOnCo
           // 2. Clear per-analysis interview/roadmap generation keys on completion
           if (!isAnswerEvent) {
             const isInterviewComplete =
-              event.step === "Interview Questions" && event.progress === 100;
+              event.step === EVENT_STEPS.INTERVIEW_QUESTIONS && event.progress === 100;
 
             const isRoadmapYouTubeDone =
-              event.step === "Learning Roadmap" &&
-              (event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated");
+              event.step === EVENT_STEPS.LEARNING_ROADMAP &&
+              (event.message === EVENT_MESSAGES.YOUTUBE_RESOURCES_LOADED || event.type === EVENT_TYPES.ROADMAP_RESOURCES_UPDATED);
 
             const isRoadmapPhase1Done =
-              event.step === "Learning Roadmap" && event.progress === 100;
+              event.step === EVENT_STEPS.LEARNING_ROADMAP && event.progress === 100;
 
             if (isInterviewComplete) {
               try {
@@ -121,9 +122,9 @@ export function useSSE(analysisId: string | undefined, enabled = true, resetOnCo
           }
 
           // 5. Auto-disconnect and refetch full data when pipeline is complete
-          const isRoadmapEvent = event.step === "Learning Roadmap";
+          const isRoadmapEvent = event.step === EVENT_STEPS.LEARNING_ROADMAP;
           const isYouTubeLoaded =
-            event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
+            event.message === EVENT_MESSAGES.YOUTUBE_RESOURCES_LOADED || event.type === EVENT_TYPES.ROADMAP_RESOURCES_UPDATED;
           const isPipelineComplete =
             !isAnswerEvent && event.progress !== undefined && event.progress >= 100 && !isRoadmapEvent;
 

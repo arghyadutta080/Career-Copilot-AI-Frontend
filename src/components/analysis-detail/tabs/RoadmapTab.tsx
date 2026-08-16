@@ -7,6 +7,7 @@ import { useAnalysisRoadmap, useGenerateRoadmap } from "@/hooks/useAnalysis";
 import { GeneratingUI } from "@/components/ui/GeneratingUI";
 import { TabContentSkeleton } from "@/components/ui/Skeleton";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
+import { EVENT_STEPS, EVENT_TYPES, EVENT_MESSAGES } from "@/constants/events";
 import type { LearningRoadmap, RoadmapMilestone, RoadmapStep, LearningResource } from "@/types";
 import { memo, useCallback, useEffect, useState } from "react";
 
@@ -287,7 +288,7 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
     // Phase 1: LLM roadmap ready — show structure with skeleton url buttons.
     if (isGeneratingRoadmap) {
       const initialEvent = events.find(
-        (e) => e.step === "Learning Roadmap" && e.progress === 100,
+        (e) => e.step === EVENT_STEPS.LEARNING_ROADMAP && e.progress === 100,
       );
       if (initialEvent?.data) {
         setLocalRoadmap(initialEvent.data as LearningRoadmap);
@@ -302,8 +303,8 @@ export function RoadmapTab({ analysisId, status, interviewStatus }: RoadmapTabPr
     if (isEnrichingRoadmap) {
       const enrichedEvent = events.find(
         (e) =>
-          e.step === "Learning Roadmap" &&
-          (e.message === "YouTube resources loaded." || e.type === "roadmap_resources_updated"),
+          e.step === EVENT_STEPS.LEARNING_ROADMAP &&
+          (e.message === EVENT_MESSAGES.YOUTUBE_RESOURCES_LOADED || e.type === EVENT_TYPES.ROADMAP_RESOURCES_UPDATED),
       );
       if (enrichedEvent?.data) {
         setResourceUrlMap(enrichedEvent.data as Record<string, string[]>);

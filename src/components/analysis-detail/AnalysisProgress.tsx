@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { EVENT_TYPES } from "@/constants/events";
 
 import { CheckCircle2, Circle, Loader2, AlertCircle, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -59,7 +60,7 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
   }, [localEvents]);
 
   const hasError = useMemo(() => {
-    return localEvents.some((e) => e.type === "error");
+    return localEvents.some((e) => e.type === EVENT_TYPES.ERROR);
   }, [localEvents]);
 
   // Cleanup localStorage progress events once completed
@@ -78,8 +79,8 @@ export function AnalysisProgress({ analysisId, initialStatus }: AnalysisProgress
   ): "pending" | "running" | "completed" | "error" => {
     // If we have live events that indicate completion, use them
     const stepEvents = localEvents.filter((e) => e.step === stepId);
-    if (stepEvents.some((e) => e.type === "error")) return "error";
-    if (stepEvents.some((e) => e.type === "complete")) return "completed";
+    if (stepEvents.some((e) => e.type === EVENT_TYPES.ERROR)) return "error";
+    if (stepEvents.some((e) => e.type === EVENT_TYPES.COMPLETE)) return "completed";
 
     // Fall back to initial polling status
     if (initialStatus?.toolStatus) {

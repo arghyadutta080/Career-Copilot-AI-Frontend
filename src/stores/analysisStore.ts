@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { EVENT_TYPES, EVENT_MESSAGES } from "@/constants/events";
 import type { SSEProgressEvent } from "@/types";
 
 interface AnalysisProgressState {
@@ -47,28 +48,28 @@ export const useAnalysisProgressStore = create<AnalysisProgressState>(
     addEvent: (event) =>
       set((state) => {
         if (
-          event.type === "answer_started" ||
-          event.type === "answer_delta" ||
-          event.type === "answer_completed" ||
-          event.type === "answer_error"
+          event.type === EVENT_TYPES.ANSWER_STARTED ||
+          event.type === EVENT_TYPES.ANSWER_DELTA ||
+          event.type === EVENT_TYPES.ANSWER_COMPLETED ||
+          event.type === EVENT_TYPES.ANSWER_ERROR
         ) {
-          const isDone = event.type === "answer_completed" || event.type === "answer_error";
+          const isDone = event.type === EVENT_TYPES.ANSWER_COMPLETED || event.type === EVENT_TYPES.ANSWER_ERROR;
           return {
             events: [...state.events, event],
-            hasError: event.type === "answer_error",
+            hasError: event.type === EVENT_TYPES.ANSWER_ERROR,
             ...(isDone ? { isGeneratingAnswer: false } : {}),
           };
         }
 
         const isRoadmapResourcesLoaded =
-          event.message === "YouTube resources loaded." || event.type === "roadmap_resources_updated";
+          event.message === EVENT_MESSAGES.YOUTUBE_RESOURCES_LOADED || event.type === EVENT_TYPES.ROADMAP_RESOURCES_UPDATED;
 
         return {
           events: [...state.events, event],
           currentStep: event.step || "",
           progress: event.progress ?? 0,
           isComplete: (event.progress !== undefined && event.progress >= 100) || isRoadmapResourcesLoaded,
-          hasError: event.type === "error",
+          hasError: event.type === EVENT_TYPES.ERROR,
         };
       }),
 

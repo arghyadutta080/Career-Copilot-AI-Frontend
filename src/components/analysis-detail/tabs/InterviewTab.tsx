@@ -8,6 +8,7 @@ import { useAnalysisInterview, useGenerateInterview, useGenerateInterviewAnswer 
 import { GeneratingUI } from "@/components/ui/GeneratingUI";
 import { TabContentSkeleton } from "@/components/ui/Skeleton";
 import { useAnalysisProgressStore } from "@/stores/analysisStore";
+import { EVENT_STEPS, EVENT_TYPES } from "@/constants/events";
 import type { InterviewQuestion, InterviewFollowUp, InterviewAnswer } from "@/types";
 import { useEffect, useState } from "react";
 import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
@@ -91,9 +92,9 @@ function AnswerSection({ q, analysisId, disabledReason }: AnswerSectionProps) {
   const answerObj = getAnswerObj(q);
 
   const categoryEvents = events.filter((e) => e.questionId === q.id);
-  const hasStartEvent = categoryEvents.some((e) => e.type === "answer_started");
-  const hasCompleteEvent = categoryEvents.some((e) => e.type === "answer_completed");
-  const hasErrorEvent = categoryEvents.some((e) => e.type === "answer_error");
+  const hasStartEvent = categoryEvents.some((e) => e.type === EVENT_TYPES.ANSWER_STARTED);
+  const hasCompleteEvent = categoryEvents.some((e) => e.type === EVENT_TYPES.ANSWER_COMPLETED);
+  const hasErrorEvent = categoryEvents.some((e) => e.type === EVENT_TYPES.ANSWER_ERROR);
 
   const isGeneratingLocally = hasStartEvent && !hasCompleteEvent && !hasErrorEvent;
   const isGenerating = answerObj.status === "generating" || isGeneratingLocally;
@@ -101,7 +102,7 @@ function AnswerSection({ q, analysisId, disabledReason }: AnswerSectionProps) {
   const isFailed = answerObj.status === "failed" || (hasErrorEvent && !isGeneratingLocally);
 
   const streamedText = categoryEvents
-    .filter((e) => e.type === "answer_delta")
+    .filter((e) => e.type === EVENT_TYPES.ANSWER_DELTA)
     .map((e) => e.delta)
     .join("");
 
@@ -125,9 +126,9 @@ function AnswerSection({ q, analysisId, disabledReason }: AnswerSectionProps) {
       const latest = categoryEvents[categoryEvents.length - 1];
       if (
         latest &&
-        (latest.type === "answer_started" ||
-          latest.type === "answer_completed" ||
-          latest.type === "answer_error")
+        (latest.type === EVENT_TYPES.ANSWER_STARTED ||
+          latest.type === EVENT_TYPES.ANSWER_COMPLETED ||
+          latest.type === EVENT_TYPES.ANSWER_ERROR)
       ) {
         queryClient.invalidateQueries({ queryKey: ["analysis", analysisId] });
         queryClient.invalidateQueries({ queryKey: ["analysis", analysisId, "interview"] });
@@ -253,7 +254,7 @@ export function InterviewTab({ analysisId, status }: InterviewTabProps) {
   useEffect(() => {
     if (!isGeneratingInterview) return;
     const isComplete = events.some(
-      (e) => e.step === "Interview Questions" && e.progress === 100
+      (e) => e.step === EVENT_STEPS.INTERVIEW_QUESTIONS && e.progress === 100
     );
     if (isComplete) {
       setIsGeneratingInterview(false);
